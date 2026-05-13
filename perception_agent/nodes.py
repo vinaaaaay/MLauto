@@ -4,10 +4,14 @@ LangGraph node functions for the Perception Module.
 Each function takes MLAutoState and returns a partial state update dict.
 These map 1:1 to the original autogluon-assistant agents:
 
-  scan_data             → DataPerceptionAgent
-  find_description_files → DescriptionFileRetrieverAgent
+  scan_data               → DataPerceptionAgent
+  find_description_files  → DescriptionFileRetrieverAgent
   generate_task_description → TaskDescriptorAgent
-  select_tools          → ToolSelectorAgent
+  select_tools            → ToolSelectorAgent
+
+Note: retrieve_tutorials and rerank_tutorials are in their own modules:
+  semantic_memory/nodes.py  → RetrieverAgent
+  episodic_memory/nodes.py  → RerankerAgent
 """
 
 import logging

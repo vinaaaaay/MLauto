@@ -1,4 +1,4 @@
-# MLauto Configuration
+# MLauto Configuration — aligned with autogluon-assistant
 
 llm:
   model: gpt-5-nano-2025-08-07
@@ -6,14 +6,34 @@ llm:
   max_tokens: 16384
 
 execution:
-  timeout: 3600           # per-execution timeout in seconds
-  max_iterations: 5       # max coding iterations before stopping
-  docker_image: mlauto-executor:latest  # Docker image for containerized code execution
+  timeout: 3600                     # per-execution timeout in seconds
+  docker_image: mlauto-executor:latest
 
+# MCTS search parameters
+mcts:
+  max_iterations: 10                # total MCTS steps
+  exploration_constant: 1.414       # UCT exploration weight
+  max_debug_depth: 3                # max debug chain length
+  failure_offset: 0                 # offset before penalising failures
+  failure_penalty_weight: 0.5       # weight of failure penalty in UCT
+  initial_root_children: 3          # how many root children before re-selecting
+  max_debug_children: 2             # max debug expansions per failed node
+  max_evolve_children: 2            # max evolve expansions per successful node
+  continuous_improvement: true      # keep searching after first success
+
+# Data perception
 data:
   max_chars_per_file: 768
   max_file_group_size_to_show: 5
 
-# Path to autogluon-assistant tools_registry (for tool catalog)
-# Leave null to use default relative path
+# Tutorial / semantic memory
+tutorials:
+  num_tutorial_retrievals: 10       # top-k from FAISS search
+  max_num_tutorials: 3              # how many survive reranking
+  max_tutorial_length: 30000        # total chars budget across tutorials
+  condense_tutorials: true          # use condensed tutorial variants
+  use_tutorial_summary: true        # show summaries in reranker prompt
+
+# Path to tools_registry (for tool catalog + tutorials)
+# null = use default relative path (MLauto/tools_registry)
 tool_registry_path: null

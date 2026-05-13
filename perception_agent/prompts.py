@@ -1,13 +1,15 @@
 """
 Prompt templates for the Perception Module subagents.
 
-Ported from autogluon-assistant/src/autogluon/assistant/prompts/:
+Ported from autogluon-assistant prompts:
   - python_reader_prompt.py   → PYTHON_READER_PROMPT
   - description_file_retriever_prompt.py → DESCRIPTION_FILE_RETRIEVER_PROMPT
   - task_descriptor_prompt.py → TASK_DESCRIPTOR_PROMPT
   - tool_selector_prompt.py   → TOOL_SELECTOR_PROMPT
 
-Each is a plain f-string template.  No BasePrompt / VariableProvider abstraction.
+Note: Retriever and Reranker prompts live in their own modules:
+  - semantic_memory/prompts.py  → RETRIEVER_PROMPT
+  - episodic_memory/prompts.py  → RERANKER_PROMPT
 """
 
 # ─── DataPerceptionAgent: reads individual files via LLM ──────────────────

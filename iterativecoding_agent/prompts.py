@@ -1,7 +1,7 @@
 """
 Prompt templates for the Iterative Coding Module subagents.
 
-Ported from autogluon-assistant/src/autogluon/assistant/prompts/:
+Aligned with autogluon-assistant prompts:
   - python_coder_prompt.py  → PYTHON_CODER_PROMPT
   - bash_coder_prompt.py    → BASH_CODER_PROMPT
   - executer_prompt.py      → EXECUTER_PROMPT
@@ -38,6 +38,8 @@ ONLY save files to the working directory: {output_folder}.
    - To avoid DDP errors, wrap the code in: if __name__ == "__main__":
    - Ensure errors are propagated up and not silently caught - do not use try/except blocks unless you explicitly re-raise the exception.
 
+{validation_prompt}
+
 {tool_prompt}
 
 {code_improvement_prompt}
@@ -56,6 +58,9 @@ Please provide the complete Python script that accomplishes these tasks, ensurin
 ### Previous Errors
 These errors were encountered across different implementation approaches and may not be directly related to your current implementation. Use them as reference material to identify potential pitfalls and avoid similar mistakes in your implementation.
 {all_error_analyses}
+
+### Tutorials for Reference
+{tutorial_prompt}
 
 Please format your response with the code in a ```python``` code block to make it easily extractable.
 """
@@ -158,17 +163,43 @@ SUGGESTED_FIX: [Specific debugging directions in 1-3 sentences without code]
 
 # ─── Environment prompt helper ───────────────────────────────────────────
 
-def build_environment_prompt(iteration_folder: str, current_tool: str) -> str:
+def build_environment_prompt(
+    iteration_folder: str,
+    current_tool: str,
+    common_env_file: str = "",
+    tool_env_file: str = "",
+    configure_env: bool = False,
+) -> str:
     """Build the environment setup section for the bash coder prompt.
 
-    This creates instructions for setting up a conda env inside the
-    Docker container, matching autogluon-assistant's approach.
+    Matches autogluon-assistant's BashCoderPrompt.get_env_prompt().
+    Uses requirements files from the tool registry when available.
     """
-    return f"""\
+    env_prompt = f"""
 Create and configure a conda environment in "conda_env" folder under {iteration_folder}:
  - Python version: 3.11
  - Activate the environment
- - pip install uv
- - Install required packages for {current_tool} using uv pip install
- - Only install the exact packages specified with their dependencies.
- - Do NOT upgrade or reinstall {current_tool} if it's already at the correct version."""
+ - pip install uv"""
+
+    if common_env_file and tool_env_file:
+        env_prompt += f"\n - Install required packages from {common_env_file} and {tool_env_file} using uv pip install -r {tool_env_file} --prerelease=allow -r {common_env_file}"
+    else:
+        env_prompt += f"\n - Install required packages for {current_tool} using uv pip install"
+
+    if not configure_env:
+        env_prompt += f"\n - Only install the exact packages specified with their dependencies.\n - Do NOT upgrade or reinstall {current_tool} if it's already at the correct version."
+    else:
+        env_prompt += "\n - Install any additional packages that are needed for the python script to run successfully"
+
+    return env_prompt
+
+
+def build_validation_prompt(continuous_improvement: bool) -> str:
+    """Generate the validation section of the prompt, matching autogluon-assistant."""
+    if continuous_improvement:
+        return """6. Validation (only when there is labeled training data):
+   - If there is training and but no validation data is given, hold out a validation dataset (10 percent of the data) at the start, train only on the remaining data.
+   - At the end compute and print the final evaluation metric score on the validation set.
+   - Use a try-except block for the validation step - if validation fails, it's acceptable to continue.
+"""
+    return ""

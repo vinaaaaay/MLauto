@@ -1,27 +1,28 @@
 """
-Simplified tool registry — reads the catalog.json + per-tool tool.json
-files from the autogluon-assistant tools_registry directory.
+Tool registry — reads catalog.json + per-tool tool.json files.
 
-This replaces the full ToolsRegistry class but keeps the same data format
-so the ToolSelector prompt can list available tools.
+Aligned with autogluon-assistant's ToolsRegistry. Provides tool metadata,
+prompt templates, requirements files, and tutorial folder paths.
 """
 
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import List, NamedTuple, Optional
 
 logger = logging.getLogger(__name__)
 
-# Default registry path: points to the autogluon-assistant tools_registry
-_DEFAULT_REGISTRY_PATH = (
-    Path(__file__).parent.parent.parent
-    / "autogluon-assistant"
-    / "src"
-    / "autogluon"
-    / "assistant"
-    / "tools_registry"
-)
+# Default registry path: MLauto/tools_registry
+_DEFAULT_REGISTRY_PATH = Path(__file__).parent.parent / "tools_registry"
+
+
+class TutorialInfo(NamedTuple):
+    """Stores information about a tutorial."""
+    path: Path
+    title: str
+    summary: str
+    score: Optional[float] = None
+    content: Optional[str] = None
 
 
 class ToolRegistry:
@@ -29,9 +30,8 @@ class ToolRegistry:
     Reads the tool catalog and per-tool metadata from disk.
 
     Usage:
-        registry = ToolRegistry()            # uses default path
-        registry = ToolRegistry("/custom")   # custom path
-        tools = registry.list_tools()        # ['autogluon.tabular', ...]
+        registry = ToolRegistry()
+        tools = registry.list_tools()
         info  = registry.get_tool("autogluon.tabular")
     """
 
@@ -96,7 +96,7 @@ class ToolRegistry:
 
     # ── Public API ──
 
-    def list_tools(self) -> list[str]:
+    def list_tools(self) -> List[str]:
         return list(self.tools.keys())
 
     def get_tool(self, name: str) -> Optional[dict]:
@@ -111,6 +111,35 @@ class ToolRegistry:
         if isinstance(pt, list):
             return "\n".join(pt)
         return str(pt)
+
+    def get_tool_path(self, name: str) -> Optional[Path]:
+        """Get the absolute path for a tool's directory."""
+        tool = self.get_tool(name)
+        if not tool:
+            return None
+        return self.registry_path / tool["path"]
+
+    def get_tool_tutorials_folder(self, name: str, condensed: bool = False) -> Path:
+        """Get the tutorials folder for a specific tool."""
+        tool_path = self.get_tool_path(name)
+        if tool_path is None:
+            raise FileNotFoundError(f"Tool {name} not found in registry")
+        subfolder = "condensed_tutorials" if condensed else "tutorials"
+        tutorials_dir = tool_path / subfolder
+        if not tutorials_dir.exists():
+            raise FileNotFoundError(f"No {subfolder} found for tool {name} at {tutorials_dir}")
+        return tutorials_dir
+
+    def get_common_requirements_file(self) -> Path:
+        """Get the path to _common/requirements.txt."""
+        return self.registry_path / "_common" / "requirements.txt"
+
+    def get_tool_requirements_file(self, name: str) -> Path:
+        """Get the path to a tool's requirements.txt."""
+        tool_path = self.get_tool_path(name)
+        if tool_path is None:
+            raise FileNotFoundError(f"Tool {name} not found")
+        return tool_path / "requirements.txt"
 
     def format_tools_info(self) -> str:
         """Format all tools for inclusion in the ToolSelector prompt."""
