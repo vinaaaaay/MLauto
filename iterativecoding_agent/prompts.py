@@ -1,0 +1,174 @@
+"""
+Prompt templates for the Iterative Coding Module subagents.
+
+Ported from autogluon-assistant/src/autogluon/assistant/prompts/:
+  - python_coder_prompt.py  → PYTHON_CODER_PROMPT
+  - bash_coder_prompt.py    → BASH_CODER_PROMPT
+  - executer_prompt.py      → EXECUTER_PROMPT
+  - error_analyzer_prompt.py → ERROR_ANALYZER_PROMPT
+"""
+
+# ─── CoderAgent (Python) ──────────────────────────────────────────────────
+
+PYTHON_CODER_PROMPT = """\
+As an AutoML Agent, you will be given a folder containing data and description files. Please generate Python code using {current_tool} to train a predictor and make predictions on test data. Follow these specifications:
+
+ONLY save files to the working directory: {output_folder}.
+
+1. Data preprocessing:
+   - Remove training data samples without valid labels (drop NA values from training dataset ONLY, NOT from test dataset) unless explicitly instructed otherwise.
+   - Remove the unnecessary index column (if applicable)
+
+2. Model training:
+   - Use {current_tool} with appropriate parameters for the task
+   - If a model is trained, save it in a folder with random timestamp within {output_folder}
+
+3. Prediction:
+   - Make predictions on the ENTIRE test set, preserving ORIGINAL INDICES to maintain exact row correspondence. NEVER drop any test rows for any reason (including missing values), and ensure the output has the exact same number of rows as the test set.
+   - Save the predicted results to {output_folder}, result file name should be "results", the format and extension should be same as the test data file
+   - Output column names must exactly match those in the training or sample submission files without adding "predicted_" prefixes or creating any new columns.
+   - IMPORTANT: At the end, implement validation checks that assert the prediction file maintains exact test data indices, verify correct column names match requirements, confirm proper output format, verify the number of predictions equals the number of test samples, and if applicable, sanity check output predictions are valid and correct.
+
+4. Documentation:
+   - Add a brief docstring at the beginning of the script explaining its purpose
+   - Include additional installation steps with comments at the beginning of the script
+   - Include comments explaining any complex operations or design decisions
+
+5. Others:
+   - To avoid DDP errors, wrap the code in: if __name__ == "__main__":
+   - Ensure errors are propagated up and not silently caught - do not use try/except blocks unless you explicitly re-raise the exception.
+
+{tool_prompt}
+
+{code_improvement_prompt}
+
+Please provide the complete Python script that accomplishes these tasks, ensuring it's ready to run given the appropriate data inputs.
+
+### Task Description
+{task_description}
+
+### Data Structure
+{data_prompt}
+
+### User Instruction
+{user_input}
+
+### Previous Errors
+These errors were encountered across different implementation approaches and may not be directly related to your current implementation. Use them as reference material to identify potential pitfalls and avoid similar mistakes in your implementation.
+{all_error_analyses}
+
+Please format your response with the code in a ```python``` code block to make it easily extractable.
+"""
+
+
+# ─── CoderAgent (Bash) ────────────────────────────────────────────────────
+
+BASH_CODER_PROMPT = """\
+Generate a minimal bash script that will:
+{environment_prompt}
+Execute the Python script: {python_file_path}
+
+### Python code in the script:
+{python_code}
+
+### Previous Error
+{all_error_analyses}
+
+### Previous failed bash script:
+{previous_bash_script}
+
+Notes:
+- Generate a minimal, executable bash script
+- Focus on essential commands only
+- Handle environment and package only if asked or there were errors
+
+Please format your response with the code in a ```bash``` code block to make it easily extractable.
+"""
+
+
+# ─── ExecuterAgent ────────────────────────────────────────────────────────
+
+EXECUTER_PROMPT = """\
+You are an expert code evaluator. Analyze the execution results of the following Python code and determine if the execution was successful or if issues need to be fixed.
+
+### Task Descriptions
+{task_description}
+
+### Data Structure
+{data_prompt}
+
+### Python Code
+{python_code}
+
+## Execution Results
+### Standard Output (stdout)
+
+{stdout}
+
+### Standard Error (stderr)
+
+{stderr}
+
+Evaluate the execution results and decide on one of the following actions:
+1. SUCCESS - If the execution was completely successful and met all requirements.
+2. FIX - If there were errors, issues, or performance problems that need to be addressed.
+
+Provide your decision in the following format:
+DECISION: [SUCCESS or FIX]
+ERROR_SUMMARY: [Brief summary of errors if any, or "None" if no errors]
+VALIDATION_SCORE: [If there is a validation score for the solution, provide it as a number, otherwise "None"]
+
+The error summary should be brief but informative enough for another agent to understand what needs to be fixed.
+Even if the code executed without throwing errors, it might still have issues with logic or not meet all requirements.
+
+For validation scores:
+- If there is a validation score present in the execution results, extract it (e.g. the last validation score reported in the training process).
+- Convert the score to ensure higher values indicate better performance (multiply "lower is better" metrics like RMSE, MAE, or loss by -1)
+- Return the converted score that follows the "higher is better" convention
+"""
+
+
+# ─── ErrorAnalyzerAgent ──────────────────────────────────────────────────
+
+ERROR_ANALYZER_PROMPT = """\
+Analyze the error and provide your response in this exact format:
+
+ERROR_SUMMARY: [Brief technical description of the root cause in 1-3 sentences]
+SUGGESTED_FIX: [Specific debugging directions in 1-3 sentences without code]
+
+### Error Message
+{error_message}
+
+### Task Description
+{task_description}
+
+### Data Structures
+{data_prompt}
+
+### User Instructions
+{user_input}
+
+### Previous Python Code:
+{python_code}
+
+### Previous Bash Script to Execute the Python Code:
+{bash_script}
+"""
+
+
+# ─── Environment prompt helper ───────────────────────────────────────────
+
+def build_environment_prompt(iteration_folder: str, current_tool: str) -> str:
+    """Build the environment setup section for the bash coder prompt.
+
+    This creates instructions for setting up a conda env inside the
+    Docker container, matching autogluon-assistant's approach.
+    """
+    return f"""\
+Create and configure a conda environment in "conda_env" folder under {iteration_folder}:
+ - Python version: 3.11
+ - Activate the environment
+ - pip install uv
+ - Install required packages for {current_tool} using uv pip install
+ - Only install the exact packages specified with their dependencies.
+ - Do NOT upgrade or reinstall {current_tool} if it's already at the correct version."""

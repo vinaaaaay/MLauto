@@ -1,0 +1,492 @@
+2026-05-12 22:47:26 │ INFO     │ mlauto │ ============================================================
+2026-05-12 22:47:26 │ INFO     │ mlauto │ MLauto — Starting pipeline
+2026-05-12 22:47:26 │ INFO     │ mlauto │   Input:          /home/administrator/dreamlab/data
+2026-05-12 22:47:26 │ INFO     │ mlauto │   Output:         /home/administrator/dreamlab/MLauto/runs/mlauto-20260512_224726
+2026-05-12 22:47:26 │ INFO     │ mlauto │   Max iterations: 5
+2026-05-12 22:47:26 │ INFO     │ mlauto │   Verbosity:      4
+2026-05-12 22:47:26 │ INFO     │ mlauto │   LLM model:      gpt-5-nano-2025-08-07
+2026-05-12 22:47:26 │ INFO     │ mlauto │   Docker image:   mlauto-executor:latest
+2026-05-12 22:47:26 │ INFO     │ mlauto │ ============================================================
+2026-05-12 22:47:26 │ INFO     │ mlauto │ 
+2026-05-12 22:47:26 │ INFO     │ mlauto │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-05-12 22:47:26 │ INFO     │ mlauto │ Phase 1: PERCEPTION MODULE
+2026-05-12 22:47:26 │ INFO     │ mlauto │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-05-12 22:47:26 │ INFO     │ mlauto.state │ State snapshot [initial_input]: keys with values = ['input_data_folder', 'output_folder', 'user_input', 'config']
+2026-05-12 22:47:26 │ DEBUG    │ mlauto.state │ State snapshot saved to runs/mlauto-20260512_224726/state_snapshots/224726_initial_input.json
+2026-05-12 22:47:26 │ INFO     │ perception_agent.nodes │ ─── scan_data: scanning data folder and grouping files ───
+2026-05-12 22:47:26 │ INFO     │ shared.llm │ Initialized OpenAI LLM: model=gpt-5-nano-2025-08-07, temp=0.1
+2026-05-12 22:47:26 │ INFO     │ perception_agent.nodes │   Found 361 files in /home/administrator/dreamlab/data
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     description.md (1,140 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/2.png (39,053 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/131.png (46,295 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/99.png (54,733 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/155.png (61,989 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/111.png (45,948 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/21.png (34,157 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/137.png (43,945 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/92.png (51,289 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/114.png (45,948 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/90.png (47,344 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/81.png (53,131 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/39.png (31,679 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/32.png (37,873 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/75.png (53,131 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/3.png (37,693 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/123.png (47,869 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/108.png (54,733 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/129.png (47,869 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/101.png (57,345 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/68.png (32,634 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/72.png (31,726 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/93.png (47,344 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/144.png (43,460 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/56.png (31,569 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/174.png (58,030 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/150.png (58,725 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/11.png (39,053 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/18.png (34,157 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/161.png (56,465 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/192.png (52,360 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/62.png (32,634 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/5.png (39,053 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/48.png (31,679 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/36.png (34,660 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/138.png (43,460 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/77.png (55,258 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/212.png (47,911 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/135.png (43,460 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/57.png (31,022 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/83.png (55,258 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/69.png (31,726 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/30.png (34,660 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/206.png (47,911 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/191.png (55,718 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/120.png (45,948 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/210.png (44,934 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/63.png (31,726 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/171.png (58,030 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/183.png (52,360 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/12.png (37,693 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/167.png (56,465 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/164.png (56,465 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/213.png (44,934 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/177.png (58,030 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/146.png (61,989 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/35.png (37,873 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/17.png (36,606 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/33.png (34,660 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/209.png (47,911 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/113.png (49,058 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/87.png (47,344 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/95.png (51,289 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/107.png (57,345 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/45.png (31,679 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/41.png (35,547 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/86.png (51,289 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/179.png (60,391 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/9.png (37,693 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/29.png (37,873 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/71.png (32,634 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/26.png (37,873 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/126.png (47,869 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/125.png (46,295 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/152.png (61,989 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/6.png (37,693 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/141.png (43,460 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/116.png (49,058 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/149.png (61,989 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/80.png (55,258 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/204.png (45,905 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/15.png (34,157 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/147.png (58,725 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/24.png (34,157 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/207.png (44,934 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/65.png (32,634 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/110.png (49,058 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/134.png (43,945 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/198.png (45,905 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/143.png (43,945 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/162.png (54,319 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/195.png (45,905 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/188.png (55,718 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/102.png (54,733 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/44.png (35,547 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/122.png (46,295 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/153.png (58,725 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/159.png (54,319 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/173.png (60,391 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/185.png (55,718 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/78.png (53,131 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/203.png (48,340 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/140.png (43,945 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/170.png (60,391 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/216.png (44,934 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/132.png (47,869 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/189.png (52,360 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/20.png (36,606 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/104.png (57,345 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/158.png (56,465 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/197.png (48,340 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/165.png (54,319 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/51.png (31,022 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/215.png (47,911 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/186.png (52,360 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/201.png (45,905 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/180.png (58,030 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/53.png (31,569 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/194.png (48,340 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/200.png (48,340 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/156.png (58,725 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/182.png (55,718 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/96.png (47,344 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/176.png (60,391 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/98.png (57,345 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/168.png (54,319 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/66.png (31,726 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/47.png (35,547 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/50.png (31,569 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/14.png (36,606 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/23.png (36,606 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/117.png (45,948 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/8.png (39,053 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/38.png (35,547 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/84.png (53,131 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/59.png (31,569 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/119.png (49,058 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/128.png (46,295 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/27.png (34,660 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/54.png (31,022 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/105.png (54,733 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/89.png (51,289 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/74.png (55,258 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/60.png (31,022 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train_cleaned/42.png (31,679 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/103.png (160,977 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/175.png (162,427 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/199.png (163,954 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/25.png (103,737 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/202.png (155,691 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/208.png (149,119 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/40.png (96,186 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/112.png (146,144 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/124.png (148,457 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/13.png (99,655 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/19.png (100,551 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/22.png (96,974 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/214.png (151,283 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/7.png (103,694 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/145.png (162,468 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/76.png (152,832 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/31.png (104,584 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/154.png (157,709 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/58.png (98,658 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/37.png (100,576 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/127.png (159,234 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/148.png (155,978 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/211.png (160,087 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/184.png (147,613 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/10.png (100,655 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/109.png (155,287 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/142.png (146,713 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/100.png (151,594 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/169.png (161,381 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/121.png (157,995 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/163.png (158,231 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/166.png (152,134 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/172.png (153,339 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/91.png (156,294 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/70.png (95,668 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/4.png (99,787 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/61.png (99,609 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/115.png (156,257 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/52.png (97,583 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/94.png (149,038 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/43.png (101,683 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/196.png (154,033 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/139.png (155,563 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/136.png (144,109 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/178.png (155,223 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/118.png (148,217 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/157.png (157,199 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/130.png (150,525 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/16.png (95,825 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/49.png (102,001 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/67.png (100,814 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/79.png (161,363 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/82.png (154,750 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/1.png (102,802 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/160.png (149,853 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/85.png (154,791 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/73.png (160,173 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/133.png (154,069 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/187.png (157,754 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/88.png (146,629 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/151.png (163,517 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/190.png (150,176 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/193.png (162,403 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/28.png (100,069 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/205.png (158,586 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/55.png (103,252 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/64.png (94,511 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/34.png (100,701 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/97.png (159,910 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/106.png (153,190 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/181.png (156,813 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     test/46.png (97,248 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/2.png (100,810 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/131.png (149,756 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/99.png (154,732 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/155.png (162,318 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/111.png (146,898 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/21.png (94,627 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/137.png (141,651 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/92.png (150,809 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/114.png (146,546 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/90.png (145,436 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/81.png (153,378 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/39.png (94,984 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/32.png (102,559 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/75.png (153,913 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/3.png (99,267 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/123.png (150,892 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/108.png (155,091 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/129.png (150,242 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/101.png (152,742 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/68.png (97,859 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/72.png (94,516 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/93.png (145,019 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/144.png (145,411 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/56.png (100,755 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/174.png (160,250 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/150.png (160,783 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/11.png (100,558 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/18.png (94,297 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/161.png (152,082 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/192.png (154,395 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/62.png (96,148 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/5.png (99,202 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/48.png (94,633 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/36.png (98,780 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/138.png (142,908 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/77.png (152,372 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/212.png (156,193 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/135.png (144,510 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/57.png (97,593 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/83.png (154,757 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/69.png (94,388 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/30.png (98,112 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/206.png (152,984 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/191.png (155,509 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/120.png (148,710 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/210.png (149,638 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/63.png (94,995 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/171.png (160,985 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/183.png (152,863 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/12.png (99,349 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/167.png (154,698 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/164.png (156,679 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/213.png (150,980 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/177.png (160,671 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/146.png (162,238 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/35.png (100,709 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/17.png (94,517 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/33.png (98,917 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/209.png (149,477 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/113.png (146,639 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/87.png (145,686 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/95.png (148,442 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/107.png (154,627 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/45.png (94,331 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/41.png (95,130 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/86.png (147,816 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/179.png (162,079 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/9.png (98,837 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/29.png (99,655 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/71.png (95,385 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/26.png (101,497 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/126.png (149,346 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/125.png (147,131 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/152.png (164,206 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/6.png (98,391 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/141.png (143,535 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/116.png (152,189 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/149.png (160,351 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/80.png (157,196 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/204.png (157,170 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/15.png (95,175 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/147.png (161,023 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/24.png (95,555 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/207.png (151,428 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/65.png (93,675 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/110.png (149,167 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/134.png (145,192 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/198.png (155,316 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/143.png (145,037 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/162.png (153,095 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/195.png (156,614 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/188.png (158,273 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/102.png (153,655 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/44.png (98,710 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/122.png (150,632 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/153.png (160,816 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/159.png (153,269 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/173.png (160,546 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/185.png (153,104 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/78.png (153,487 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/203.png (157,322 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/140.png (148,817 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/170.png (162,685 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/216.png (151,750 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/132.png (151,369 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/189.png (152,332 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/20.png (97,474 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/104.png (158,146 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/158.png (154,082 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/197.png (154,944 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/165.png (153,006 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/51.png (98,189 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/215.png (152,258 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/186.png (152,493 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/201.png (156,112 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/180.png (161,318 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/53.png (96,986 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/194.png (158,020 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/200.png (160,952 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/156.png (162,296 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/182.png (155,072 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/96.png (147,896 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/176.png (165,134 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/98.png (155,509 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/168.png (155,175 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/66.png (93,241 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/47.png (96,822 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/50.png (99,247 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/14.png (96,113 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/23.png (96,211 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/117.png (146,242 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/8.png (101,725 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/38.png (97,353 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/84.png (155,258 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/59.png (98,648 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/119.png (149,458 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/128.png (153,783 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/27.png (99,414 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/54.png (96,660 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/105.png (154,362 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/89.png (145,278 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/74.png (154,687 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/60.png (97,876 bytes)
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     train/42.png (93,462 bytes)
+2026-05-12 22:47:26 │ INFO     │ perception_agent.nodes │   Grouped into 4 patterns
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     Pattern ('.md',): 1 files
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     Pattern ('train_cleaned', '.png'): 144 files
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     Pattern ('test', '.png'): 72 files
+2026-05-12 22:47:26 │ DEBUG    │ perception_agent.nodes │     Pattern ('train', '.png'): 144 files
+2026-05-12 22:47:26 │ INFO     │ perception_agent.nodes │   Processing pattern: /home/administrator/dreamlab/data/*.md (1 files)
+2026-05-12 22:47:26 │ INFO     │ perception_agent.nodes │     Reading: /home/administrator/dreamlab/data/description.md
+2026-05-12 22:47:26 │ INFO     │ mlauto.llm │ [Call #1] scan_data/read_file(description.md) — sending prompt (1091 chars)
+2026-05-12 22:47:26 │ DEBUG    │ mlauto.llm │ [Call #1] scan_data/read_file(description.md) — PROMPT:
+============================================================
+Generate Python code to read and analyze the file: "/home/administrator/dreamlab/data/description.md"
+
+File Size: 0.00 MB
+
+Your code should:
+1. Import all modules used (e.g. import os).
+2. Use appropriate libraries based on file type (pandas for tabular data, etc.)
+3. For tabular files (csv, excel, parquet, etc.):
+    - Display column names. If there are more than 20 columns, only display the first and last 10.
+    - Show first 2-3 rows with truncated cell content (50 chars).
+    - Do not show additional index column if it's not in the original table.
+    - If failed to open the file, treat it as text file.
+4. For text files:
+    - Display first few lines (up to 768 characters).
+5. For compressed tabular or text files, show its decompressed content as described.
+6. For binary or other files, provide only the most basic information.
+7. Keep the total output under 768 characters.
+
+Return ONLY the Python code, no explanations. The code should be self-contained and executable.
+
+Please format your response with the code in a ```python``` code block to make it easily extractable.
+
+============================================================
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ Request options: {'method': 'post', 'url': '/chat/completions', 'headers': {'X-Stainless-Raw-Response': 'true'}, 'files': None, 'idempotency_key': 'stainless-python-retry-6ec26215-b454-4faa-be16-4f19bd9e2aee', 'security': {'bearer_auth': True}, 'content': None, 'json_data': {'messages': [{'content': 'Generate Python code to read and analyze the file: "/home/administrator/dreamlab/data/description.md"\n\nFile Size: 0.00 MB\n\nYour code should:\n1. Import all modules used (e.g. import os).\n2. Use appropriate libraries based on file type (pandas for tabular data, etc.)\n3. For tabular files (csv, excel, parquet, etc.):\n    - Display column names. If there are more than 20 columns, only display the first and last 10.\n    - Show first 2-3 rows with truncated cell content (50 chars).\n    - Do not show additional index column if it\'s not in the original table.\n    - If failed to open the file, treat it as text file.\n4. For text files:\n    - Display first few lines (up to 768 characters).\n5. For compressed tabular or text files, show its decompressed content as described.\n6. For binary or other files, provide only the most basic information.\n7. Keep the total output under 768 characters.\n\nReturn ONLY the Python code, no explanations. The code should be self-contained and executable.\n\nPlease format your response with the code in a ```python``` code block to make it easily extractable.\n', 'role': 'user'}], 'model': 'gpt-5-nano-2025-08-07', 'max_completion_tokens': 16384, 'stream': False}}
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ Sending HTTP Request: POST https://api.openai.com/v1/chat/completions
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.connection │ connect_tcp.started host='api.openai.com' port=443 local_address=None timeout=None socket_options=[(1, 9, 1), (6, 4, 60), (6, 5, 10), (6, 6, 3), (6, 18, 120000)]
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.connection │ connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7a46eb5ec490>
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.connection │ start_tls.started ssl_context=<ssl.SSLContext object at 0x7a46ec06bb40> server_hostname='api.openai.com' timeout=None
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.connection │ start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7a46eb5ec460>
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ send_request_headers.started request=<Request [b'POST']>
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ send_request_headers.complete
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ send_request_body.started request=<Request [b'POST']>
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ send_request_body.complete
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ receive_response_headers.complete return_value=(b'HTTP/1.1', 429, b'Too Many Requests', [(b'Date', b'Tue, 12 May 2026 17:17:26 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Content-Length', b'337'), (b'Connection', b'keep-alive'), (b'set-cookie', b'__cf_bm=hqcq9QDh7tUeE1Ao88SN96jplV9KlQQ_BNxTT_jtI1k-1778606246.536243-1.0.1.1-PtyaSBCxQFltuTISGFvNemCknLij31Ldv5mrFoz5LcNWNLkqGZIVmisdEegZ1uUmBzEMgrF6p5fBc4SI9MIhf86HVaOGXPjkyxhKsOsTMW2hTZf3uwIpcx25BLuhG59l; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.openai.com; Expires=Tue, 12 May 2026 17:47:26 GMT'), (b'set-cookie', b'_cfuvid=7cxXrffhtLQc6q8dhgzObm1d9et.uiKtt4hpvfjnfPs-1778606246.536243-1.0.1.1-gCVRWyR9SRoWfYGtDi7wUFOWlE3Yz0Zcpg2mO6IQZxY; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.openai.com'), (b'CF-Ray', b'9fab13b0d9eab2c9-BLR'), (b'CF-Cache-Status', b'DYNAMIC'), (b'Server', b'cloudflare'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Vary', b'Origin'), (b'Access-Control-Expose-Headers', b'CF-Ray'), (b'Access-Control-Expose-Headers', b'CF-Ray'), (b'X-Content-Type-Options', b'nosniff'), (b'x-openai-proxy-wasm', b'v0.1'), (b'x-request-id', b'req_5d3f335eed814058b2833f386c3e490e'), (b'alt-svc', b'h3=":443"; ma=86400')])
+2026-05-12 22:47:26 │ INFO     │ httpx │ HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ receive_response_body.started request=<Request [b'POST']>
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ receive_response_body.complete
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ response_closed.started
+2026-05-12 22:47:26 │ DEBUG    │ httpcore.http11 │ response_closed.complete
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ HTTP Response: POST https://api.openai.com/v1/chat/completions "429 Too Many Requests" Headers([('date', 'Tue, 12 May 2026 17:17:26 GMT'), ('content-type', 'application/json; charset=utf-8'), ('content-length', '337'), ('connection', 'keep-alive'), ('set-cookie', '__cf_bm=hqcq9QDh7tUeE1Ao88SN96jplV9KlQQ_BNxTT_jtI1k-1778606246.536243-1.0.1.1-PtyaSBCxQFltuTISGFvNemCknLij31Ldv5mrFoz5LcNWNLkqGZIVmisdEegZ1uUmBzEMgrF6p5fBc4SI9MIhf86HVaOGXPjkyxhKsOsTMW2hTZf3uwIpcx25BLuhG59l; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.openai.com; Expires=Tue, 12 May 2026 17:47:26 GMT'), ('set-cookie', '_cfuvid=7cxXrffhtLQc6q8dhgzObm1d9et.uiKtt4hpvfjnfPs-1778606246.536243-1.0.1.1-gCVRWyR9SRoWfYGtDi7wUFOWlE3Yz0Zcpg2mO6IQZxY; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.openai.com'), ('cf-ray', '9fab13b0d9eab2c9-BLR'), ('cf-cache-status', 'DYNAMIC'), ('server', 'cloudflare'), ('strict-transport-security', 'max-age=31536000; includeSubDomains; preload'), ('vary', 'Origin'), ('access-control-expose-headers', 'CF-Ray'), ('access-control-expose-headers', 'CF-Ray'), ('x-content-type-options', 'nosniff'), ('x-openai-proxy-wasm', 'v0.1'), ('x-request-id', 'req_5d3f335eed814058b2833f386c3e490e'), ('alt-svc', 'h3=":443"; ma=86400')])
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ request_id: req_5d3f335eed814058b2833f386c3e490e
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ Encountered httpx.HTTPStatusError
+Traceback (most recent call last):
+  File "/home/administrator/miniconda3/envs/mlauto/lib/python3.10/site-packages/openai/_base_client.py", line 1085, in request
+    response.raise_for_status()
+  File "/home/administrator/.local/lib/python3.10/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.openai.com/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ Retrying due to status code 429
+2026-05-12 22:47:26 │ DEBUG    │ openai._base_client │ 2 retries left
+2026-05-12 22:47:26 │ INFO     │ openai._base_client │ Retrying request to /chat/completions in 0.444048 seconds
+2026-05-12 22:47:27 │ DEBUG    │ openai._base_client │ Request options: {'method': 'post', 'url': '/chat/completions', 'headers': {'X-Stainless-Raw-Response': 'true'}, 'files': None, 'idempotency_key': 'stainless-python-retry-6ec26215-b454-4faa-be16-4f19bd9e2aee', 'security': {'bearer_auth': True}, 'content': None, 'json_data': {'messages': [{'content': 'Generate Python code to read and analyze the file: "/home/administrator/dreamlab/data/description.md"\n\nFile Size: 0.00 MB\n\nYour code should:\n1. Import all modules used (e.g. import os).\n2. Use appropriate libraries based on file type (pandas for tabular data, etc.)\n3. For tabular files (csv, excel, parquet, etc.):\n    - Display column names. If there are more than 20 columns, only display the first and last 10.\n    - Show first 2-3 rows with truncated cell content (50 chars).\n    - Do not show additional index column if it\'s not in the original table.\n    - If failed to open the file, treat it as text file.\n4. For text files:\n    - Display first few lines (up to 768 characters).\n5. For compressed tabular or text files, show its decompressed content as described.\n6. For binary or other files, provide only the most basic information.\n7. Keep the total output under 768 characters.\n\nReturn ONLY the Python code, no explanations. The code should be self-contained and executable.\n\nPlease format your response with the code in a ```python``` code block to make it easily extractable.\n', 'role': 'user'}], 'model': 'gpt-5-nano-2025-08-07', 'max_completion_tokens': 16384, 'stream': False}}
+2026-05-12 22:47:27 │ DEBUG    │ openai._base_client │ Sending HTTP Request: POST https://api.openai.com/v1/chat/completions
+2026-05-12 22:47:27 │ DEBUG    │ httpcore.http11 │ send_request_headers.started request=<Request [b'POST']>
+2026-05-12 22:47:27 │ DEBUG    │ httpcore.http11 │ send_request_headers.complete
+2026-05-12 22:47:27 │ DEBUG    │ httpcore.http11 │ send_request_body.started request=<Request [b'POST']>
+2026-05-12 22:47:27 │ DEBUG    │ httpcore.http11 │ send_request_body.complete
+2026-05-12 22:47:27 │ DEBUG    │ httpcore.http11 │ receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 22:47:28 │ DEBUG    │ httpcore.http11 │ receive_response_headers.complete return_value=(b'HTTP/1.1', 429, b'Too Many Requests', [(b'Date', b'Tue, 12 May 2026 17:17:28 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Content-Length', b'337'), (b'Connection', b'keep-alive'), (b'CF-Ray', b'9fab13b57eb5b2c9-BLR'), (b'CF-Cache-Status', b'DYNAMIC'), (b'Server', b'cloudflare'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Vary', b'Origin'), (b'Access-Control-Expose-Headers', b'CF-Ray'), (b'Access-Control-Expose-Headers', b'CF-Ray'), (b'X-Content-Type-Options', b'nosniff'), (b'x-openai-proxy-wasm', b'v0.1'), (b'x-request-id', b'req_1412c243745a4837866ef3d2fdb5b0c5'), (b'alt-svc', b'h3=":443"; ma=86400')])
+2026-05-12 22:47:28 │ INFO     │ httpx │ HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-12 22:47:28 │ DEBUG    │ httpcore.http11 │ receive_response_body.started request=<Request [b'POST']>
+2026-05-12 22:47:28 │ DEBUG    │ httpcore.http11 │ receive_response_body.complete
+2026-05-12 22:47:28 │ DEBUG    │ httpcore.http11 │ response_closed.started
+2026-05-12 22:47:28 │ DEBUG    │ httpcore.http11 │ response_closed.complete
+2026-05-12 22:47:28 │ DEBUG    │ openai._base_client │ HTTP Response: POST https://api.openai.com/v1/chat/completions "429 Too Many Requests" Headers([('date', 'Tue, 12 May 2026 17:17:28 GMT'), ('content-type', 'application/json; charset=utf-8'), ('content-length', '337'), ('connection', 'keep-alive'), ('cf-ray', '9fab13b57eb5b2c9-BLR'), ('cf-cache-status', 'DYNAMIC'), ('server', 'cloudflare'), ('strict-transport-security', 'max-age=31536000; includeSubDomains; preload'), ('vary', 'Origin'), ('access-control-expose-headers', 'CF-Ray'), ('access-control-expose-headers', 'CF-Ray'), ('x-content-type-options', 'nosniff'), ('x-openai-proxy-wasm', 'v0.1'), ('x-request-id', 'req_1412c243745a4837866ef3d2fdb5b0c5'), ('alt-svc', 'h3=":443"; ma=86400')])
+2026-05-12 22:47:28 │ DEBUG    │ openai._base_client │ request_id: req_1412c243745a4837866ef3d2fdb5b0c5
+2026-05-12 22:47:28 │ DEBUG    │ openai._base_client │ Encountered httpx.HTTPStatusError
+Traceback (most recent call last):
+  File "/home/administrator/miniconda3/envs/mlauto/lib/python3.10/site-packages/openai/_base_client.py", line 1085, in request
+    response.raise_for_status()
+  File "/home/administrator/.local/lib/python3.10/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.openai.com/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-05-12 22:47:28 │ DEBUG    │ openai._base_client │ Retrying due to status code 429
+2026-05-12 22:47:28 │ DEBUG    │ openai._base_client │ 1 retry left
+2026-05-12 22:47:28 │ INFO     │ openai._base_client │ Retrying request to /chat/completions in 0.899150 seconds
+2026-05-12 22:47:29 │ DEBUG    │ openai._base_client │ Request options: {'method': 'post', 'url': '/chat/completions', 'headers': {'X-Stainless-Raw-Response': 'true'}, 'files': None, 'idempotency_key': 'stainless-python-retry-6ec26215-b454-4faa-be16-4f19bd9e2aee', 'security': {'bearer_auth': True}, 'content': None, 'json_data': {'messages': [{'content': 'Generate Python code to read and analyze the file: "/home/administrator/dreamlab/data/description.md"\n\nFile Size: 0.00 MB\n\nYour code should:\n1. Import all modules used (e.g. import os).\n2. Use appropriate libraries based on file type (pandas for tabular data, etc.)\n3. For tabular files (csv, excel, parquet, etc.):\n    - Display column names. If there are more than 20 columns, only display the first and last 10.\n    - Show first 2-3 rows with truncated cell content (50 chars).\n    - Do not show additional index column if it\'s not in the original table.\n    - If failed to open the file, treat it as text file.\n4. For text files:\n    - Display first few lines (up to 768 characters).\n5. For compressed tabular or text files, show its decompressed content as described.\n6. For binary or other files, provide only the most basic information.\n7. Keep the total output under 768 characters.\n\nReturn ONLY the Python code, no explanations. The code should be self-contained and executable.\n\nPlease format your response with the code in a ```python``` code block to make it easily extractable.\n', 'role': 'user'}], 'model': 'gpt-5-nano-2025-08-07', 'max_completion_tokens': 16384, 'stream': False}}
+2026-05-12 22:47:29 │ DEBUG    │ openai._base_client │ Sending HTTP Request: POST https://api.openai.com/v1/chat/completions
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ send_request_headers.started request=<Request [b'POST']>
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ send_request_headers.complete
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ send_request_body.started request=<Request [b'POST']>
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ send_request_body.complete
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ receive_response_headers.complete return_value=(b'HTTP/1.1', 429, b'Too Many Requests', [(b'Date', b'Tue, 12 May 2026 17:17:29 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Content-Length', b'337'), (b'Connection', b'keep-alive'), (b'CF-Ray', b'9fab13c22cb2b2c9-BLR'), (b'CF-Cache-Status', b'DYNAMIC'), (b'Server', b'cloudflare'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Vary', b'Origin'), (b'Access-Control-Expose-Headers', b'CF-Ray'), (b'Access-Control-Expose-Headers', b'CF-Ray'), (b'X-Content-Type-Options', b'nosniff'), (b'x-openai-proxy-wasm', b'v0.1'), (b'x-request-id', b'req_07bc1f88d3b74ba49f0c9a65c1aac2f7'), (b'alt-svc', b'h3=":443"; ma=86400')])
+2026-05-12 22:47:29 │ INFO     │ httpx │ HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ receive_response_body.started request=<Request [b'POST']>
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ receive_response_body.complete
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ response_closed.started
+2026-05-12 22:47:29 │ DEBUG    │ httpcore.http11 │ response_closed.complete
+2026-05-12 22:47:29 │ DEBUG    │ openai._base_client │ HTTP Response: POST https://api.openai.com/v1/chat/completions "429 Too Many Requests" Headers([('date', 'Tue, 12 May 2026 17:17:29 GMT'), ('content-type', 'application/json; charset=utf-8'), ('content-length', '337'), ('connection', 'keep-alive'), ('cf-ray', '9fab13c22cb2b2c9-BLR'), ('cf-cache-status', 'DYNAMIC'), ('server', 'cloudflare'), ('strict-transport-security', 'max-age=31536000; includeSubDomains; preload'), ('vary', 'Origin'), ('access-control-expose-headers', 'CF-Ray'), ('access-control-expose-headers', 'CF-Ray'), ('x-content-type-options', 'nosniff'), ('x-openai-proxy-wasm', 'v0.1'), ('x-request-id', 'req_07bc1f88d3b74ba49f0c9a65c1aac2f7'), ('alt-svc', 'h3=":443"; ma=86400')])
+2026-05-12 22:47:29 │ DEBUG    │ openai._base_client │ request_id: req_07bc1f88d3b74ba49f0c9a65c1aac2f7
+2026-05-12 22:47:29 │ DEBUG    │ openai._base_client │ Encountered httpx.HTTPStatusError
+Traceback (most recent call last):
+  File "/home/administrator/miniconda3/envs/mlauto/lib/python3.10/site-packages/openai/_base_client.py", line 1085, in request
+    response.raise_for_status()
+  File "/home/administrator/.local/lib/python3.10/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.openai.com/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-05-12 22:47:29 │ DEBUG    │ openai._base_client │ Re-raising status error
