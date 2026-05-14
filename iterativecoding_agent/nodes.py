@@ -1,8 +1,8 @@
 """
 LangGraph node functions for the Iterative Coding Module (MCTS).
 
-Each function takes MLAutoState and returns a partial state update dict.
-The MCTS tree is managed externally by NodeManager (stored on state["_node_manager"]).
+Each function takes IterativeCodingState and returns a partial state update dict.
+The MCTS tree is managed externally by NodeManager (stored on state["node_manager"]).
 
 Node functions:
   select_node           → MCTS selection (UCT)
@@ -19,8 +19,9 @@ Node functions:
 import logging
 import os
 import re
+import shutil
 
-from shared.state import MLAutoState
+from .state import IterativeCodingState
 from shared.llm import get_llm
 from shared.logging_config import LLMCallLogger, log_state_snapshot
 from shared.utils import extract_code, execute_in_docker
@@ -42,20 +43,33 @@ from episodic_memory.nodes import rerank_tutorials as _episodic_rerank
 logger = logging.getLogger(__name__)
 
 
-def _get_call_logger(state: MLAutoState) -> LLMCallLogger:
+def _get_call_logger(state: IterativeCodingState) -> LLMCallLogger:
     """Create an LLMCallLogger pointing to the run's output directory."""
     output_folder = state.get("output_folder", "./output")
     return LLMCallLogger(output_folder)
 
 
-def _get_node_manager(state: MLAutoState):
+def _get_node_manager(state: IterativeCodingState):
     """Get the NodeManager from state."""
-    return state.get("_node_manager")
+    return state.get("node_manager")
+
+
+def _docker_translate(text: str, state: IterativeCodingState) -> str:
+    """Replace host filesystem paths with their Docker-mounted equivalents.
+
+    This prevents downstream LLM prompts (evaluator, error analyzer) from
+    seeing host paths and incorrectly advising to switch back to them.
+    """
+    host_data_root = os.path.abspath(state.get("input_data_folder", "."))
+    host_output_root = os.path.abspath(state.get("output_folder", "./output"))
+    text = text.replace(host_data_root, "/workspace/data")
+    text = text.replace(host_output_root, "/workspace/output")
+    return text
 
 
 # ─── Node: select_node (MCTS Selection) ─────────────────────────────────
 
-def select_node(state: MLAutoState) -> dict:
+def select_node(state: IterativeCodingState) -> dict:
     """
     MCTS selection phase: traverse tree using UCT to find a node to expand.
 
@@ -85,7 +99,7 @@ def select_node(state: MLAutoState) -> dict:
 
 # ─── Node: expand_node (MCTS Expansion) ─────────────────────────────────
 
-def expand_node(state: MLAutoState) -> dict:
+def expand_node(state: IterativeCodingState) -> dict:
     """
     MCTS expansion: create a new child node (evolve or debug).
 
@@ -130,7 +144,7 @@ def expand_node(state: MLAutoState) -> dict:
 
 # ─── Node: retrieve_node_tutorials ───────────────────────────────────────
 
-def retrieve_node_tutorials(state: MLAutoState) -> dict:
+def retrieve_node_tutorials(state: IterativeCodingState) -> dict:
     """
     Per-node tutorial retrieval — delegates to semantic_memory module.
 
@@ -155,7 +169,7 @@ def retrieve_node_tutorials(state: MLAutoState) -> dict:
 
 # ─── Node: rerank_node_tutorials ─────────────────────────────────────────
 
-def rerank_node_tutorials(state: MLAutoState) -> dict:
+def rerank_node_tutorials(state: IterativeCodingState) -> dict:
     """
     Per-node tutorial reranking — delegates to episodic_memory module.
 
@@ -180,7 +194,7 @@ def rerank_node_tutorials(state: MLAutoState) -> dict:
 
 # ─── Node: generate_python_code ──────────────────────────────────────────
 
-def generate_python_code(state: MLAutoState) -> dict:
+def generate_python_code(state: IterativeCodingState) -> dict:
     """
     Generate the Python ML training script.
 
@@ -231,7 +245,7 @@ Please prioritize model architecture improvements and training optimization to e
     all_error_analyses = "\n\n".join(state.get("all_error_analyses", []))
 
     # Get output folder for this node
-    output_folder = state.get("output_folder", "./output")
+    output_folder = os.path.abspath(state.get("output_folder", "./output"))
     if mgr and mgr.current_node:
         iter_folder = os.path.join(output_folder, f"node_{mgr.current_node.id}")
         per_iter_output = os.path.join(iter_folder, "output")
@@ -241,17 +255,35 @@ Please prioritize model architecture improvements and training optimization to e
         per_iter_output = iter_folder
         os.makedirs(iter_folder, exist_ok=True)
 
+    # ── Translate host paths → Docker-mapped paths for the Python Coder ──
+    # The output folder is mounted at /workspace/output in Docker
+    # The input data folder is mounted at /workspace/data in Docker
+    host_data_root = os.path.abspath(state.get("input_data_folder", "."))
+    docker_output_root = "/workspace/output"
+    docker_data_root = "/workspace/data"
+
+    # Translate per_iter_output to Docker path
+    relative_iter_output = os.path.relpath(per_iter_output, output_folder)
+    docker_per_iter_output = f"{docker_output_root}/{relative_iter_output}".replace("\\", "/")
+
+    # Translate data_prompt paths
+    data_prompt = _docker_translate(state.get("data_prompt", ""), state)
+    task_description = _docker_translate(state.get("task_description", ""), state)
+    user_input = _docker_translate(state.get("user_input", ""), state)
+    tutorial_prompt = _docker_translate(state.get("tutorial_prompt", ""), state)
+    all_error_analyses = _docker_translate(all_error_analyses, state)
+
     prompt = PYTHON_CODER_PROMPT.format(
         current_tool=state.get("current_tool", ""),
-        output_folder=per_iter_output,
+        output_folder=docker_per_iter_output,
         tool_prompt=state.get("tool_prompt", ""),
         code_improvement_prompt=code_improvement_prompt,
         validation_prompt=validation_prompt,
-        task_description=state.get("task_description", ""),
-        data_prompt=state.get("data_prompt", ""),
-        user_input=state.get("user_input", ""),
+        task_description=task_description,
+        data_prompt=data_prompt,
+        user_input=user_input,
         all_error_analyses=all_error_analyses or "None",
-        tutorial_prompt=state.get("tutorial_prompt", "") or "None",
+        tutorial_prompt=tutorial_prompt or "None",
     )
 
     response_text = call_logger.call(llm, prompt, node_name=f"generate_python_code[node={node_id}]")
@@ -274,7 +306,7 @@ Please prioritize model architecture improvements and training optimization to e
 
 # ─── Node: generate_bash_script ──────────────────────────────────────────
 
-def generate_bash_script(state: MLAutoState) -> dict:
+def generate_bash_script(state: IterativeCodingState) -> dict:
     """
     Generate the bash execution script.
 
@@ -293,7 +325,7 @@ def generate_bash_script(state: MLAutoState) -> dict:
     llm = get_llm(config.get("llm"))
     call_logger = _get_call_logger(state)
 
-    output_folder = state.get("output_folder", "./output")
+    output_folder = os.path.abspath(state.get("output_folder", "./output"))
     current_tool = state.get("current_tool", "")
 
     if mgr and mgr.current_node:
@@ -302,27 +334,56 @@ def generate_bash_script(state: MLAutoState) -> dict:
         iter_folder = os.path.join(output_folder, f"iteration_{iteration}")
     os.makedirs(iter_folder, exist_ok=True)
 
-    # Get requirements files from tool registry
-    registry = ToolRegistry(config.get("tool_registry_path"))
-    try:
-        common_env_file = str(registry.get_common_requirements_file())
-        tool_env_file = str(registry.get_tool_requirements_file(current_tool))
-    except FileNotFoundError:
-        common_env_file = ""
-        tool_env_file = ""
+    # ── Translate host paths → Docker-mapped paths ──────────────────────────
+    # Docker mounts output_folder at /workspace/output
+    docker_output_root = "/workspace/output"
+    relative_iter = os.path.relpath(iter_folder, output_folder)
+    docker_iter_folder = f"{docker_output_root}/{relative_iter}".replace("\\", "/")
 
-    # Determine if env configuration is needed
-    configure_env = current_tool.lower() in ["machine learning", "huggingface", "fairseq"]
+    # Translate python_file_path to Docker path
+    host_python_path = state.get("python_file_path", "")
+    if host_python_path and host_python_path.startswith(output_folder):
+        docker_python_path = host_python_path.replace(output_folder, docker_output_root, 1)
+    else:
+        # Fallback: assume it's under iter_folder
+        docker_python_path = f"{docker_iter_folder}/generated_code.py"
+
+    # ── Copy requirements files into iter_folder so Docker can access them ──
+    # Docker only mounts output_folder; the tools_registry is on the host.
+    # Copying them makes them available at /workspace/output/node_X/ in Docker.
+    registry = ToolRegistry(config.get("tool_registry_path"))
+    docker_common_req = ""
+    docker_tool_req = ""
+    try:
+        common_req_src = str(registry.get_common_requirements_file())
+        dest = os.path.join(iter_folder, "requirements_common.txt")
+        shutil.copy2(common_req_src, dest)
+        docker_common_req = f"{docker_iter_folder}/requirements_common.txt"
+    except Exception:
+        pass
+    try:
+        tool_req_src = str(registry.get_tool_requirements_file(current_tool))
+        dest = os.path.join(iter_folder, "requirements_tool.txt")
+        shutil.copy2(tool_req_src, dest)
+        docker_tool_req = f"{docker_iter_folder}/requirements_tool.txt"
+    except Exception:
+        pass
+
+    # Determine if env configuration is needed (open-ended install)
+    configure_env = current_tool.lower() in [
+        "machine_learning", "machine learning", "huggingface", "fairseq"
+    ]
 
     environment_prompt = build_environment_prompt(
-        iteration_folder=iter_folder,
+        docker_iter_folder=docker_iter_folder,
         current_tool=current_tool,
-        common_env_file=common_env_file,
-        tool_env_file=tool_env_file,
+        common_req_file=docker_common_req,
+        tool_req_file=docker_tool_req,
         configure_env=configure_env,
     )
 
     all_error_analyses = "\n\n".join(state.get("all_error_analyses", []))
+    all_error_analyses = _docker_translate(all_error_analyses, state)
 
     # Get previous bash script from parent node
     previous_bash = ""
@@ -331,7 +392,7 @@ def generate_bash_script(state: MLAutoState) -> dict:
 
     prompt = BASH_CODER_PROMPT.format(
         environment_prompt=environment_prompt,
-        python_file_path=state.get("python_file_path", ""),
+        python_file_path=docker_python_path,   # Docker path, NOT host path
         python_code=state.get("python_code", ""),
         all_error_analyses=all_error_analyses or "None",
         previous_bash_script=previous_bash or "None",
@@ -346,6 +407,8 @@ def generate_bash_script(state: MLAutoState) -> dict:
         f.write(bash_script)
 
     logger.info(f"  Bash script saved: {bash_file_path} ({len(bash_script)} chars)")
+    logger.info(f"  Docker iter path:  {docker_iter_folder}")
+    logger.info(f"  Docker python path: {docker_python_path}")
 
     # Store on MCTS node
     if mgr and mgr.current_node:
@@ -356,7 +419,7 @@ def generate_bash_script(state: MLAutoState) -> dict:
 
 # ─── Node: execute_and_evaluate ──────────────────────────────────────────
 
-def execute_and_evaluate(state: MLAutoState) -> dict:
+def execute_and_evaluate(state: IterativeCodingState) -> dict:
     """
     Execute the generated bash script inside a Docker container,
     then use the LLM to evaluate results.
@@ -418,10 +481,11 @@ def execute_and_evaluate(state: MLAutoState) -> dict:
             return f"[...TRUNCATED ({len(text) - max_len} chars)...]\n" + text[-max_len:]
         return text
 
-    # Ask LLM to evaluate
+    # Ask LLM to evaluate — translate host paths so the LLM doesn't
+    # wrongly advise reverting to host paths during debug iterations
     prompt = EXECUTER_PROMPT.format(
-        task_description=state.get("task_description", ""),
-        data_prompt=state.get("data_prompt", ""),
+        task_description=_docker_translate(state.get("task_description", ""), state),
+        data_prompt=_docker_translate(state.get("data_prompt", ""), state),
         python_code=state.get("python_code", ""),
         stdout=truncate_start(stdout) or "No standard output",
         stderr=truncate_start(stderr) or "No standard error",
@@ -505,7 +569,7 @@ def execute_and_evaluate(state: MLAutoState) -> dict:
 
 # ─── Node: analyze_error ────────────────────────────────────────────────
 
-def analyze_error(state: MLAutoState) -> dict:
+def analyze_error(state: IterativeCodingState) -> dict:
     """
     Analyze the execution error and produce debugging suggestions.
 
@@ -526,8 +590,8 @@ def analyze_error(state: MLAutoState) -> dict:
 
     prompt = ERROR_ANALYZER_PROMPT.format(
         error_message=state.get("error_message", "No error message available."),
-        task_description=state.get("task_description", ""),
-        data_prompt=state.get("data_prompt", ""),
+        task_description=_docker_translate(state.get("task_description", ""), state),
+        data_prompt=_docker_translate(state.get("data_prompt", ""), state),
         user_input=state.get("user_input", ""),
         python_code=state.get("python_code", ""),
         bash_script=state.get("bash_script", ""),
@@ -560,7 +624,7 @@ def analyze_error(state: MLAutoState) -> dict:
 
 # ─── Node: backpropagate (MCTS Backpropagation) ─────────────────────────
 
-def backpropagate(state: MLAutoState) -> dict:
+def backpropagate(state: IterativeCodingState) -> dict:
     """
     MCTS backpropagation: update statistics up the tree.
 

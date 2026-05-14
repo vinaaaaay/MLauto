@@ -50,11 +50,11 @@ export OPENAI_API_KEY=sk-...
 Here is a full-fledged command to run the pipeline, with a breakdown of what each argument does:
 
 ```bash
-python run.py /path/to/your/dataset \
+python run.py /home/administrator/dreamlab/data \
     -u "Solve the denoising dirty documents task according to the description file." \
     -o ./my_results \
-    -v 3 \
-    -n 10
+    -v 4 \
+    -n 3
 ```
 
 **Arguments Explained:**

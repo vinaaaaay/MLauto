@@ -36,12 +36,24 @@ def get_llm(config: dict = None) -> ChatOpenAI:
             "Export it before running: export OPENAI_API_KEY=sk-..."
         )
 
-    llm = ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        api_key=api_key,
-    )
+    # Reasoning models (o1, o3, gpt-5) have strict parameter rules
+    is_reasoning_model = any(x in model.lower() for x in ["o1-", "o3-", "gpt-5"])
+
+    if is_reasoning_model:
+        logger.info(f"Detected reasoning model. Forcing temp=1 and using max_completion_tokens.")
+        llm = ChatOpenAI(
+            model=model,
+            temperature=1,  # Must be 1
+            max_completion_tokens=max_tokens,
+            api_key=api_key,
+        )
+    else:
+        llm = ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            api_key=api_key,
+        )
 
     logger.info(f"Initialized OpenAI LLM: model={model}, temp={temperature}")
     return llm

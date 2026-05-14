@@ -13,7 +13,7 @@ Graph structure:
 
 from langgraph.graph import StateGraph, START, END
 
-from shared.state import MLAutoState
+from .state import IterativeCodingState
 from .nodes import (
     select_node,
     expand_node,
@@ -27,21 +27,21 @@ from .nodes import (
 )
 
 
-def _route_after_select(state: MLAutoState) -> str:
+def _route_after_select(state: IterativeCodingState) -> str:
     """Route after select_node: if complete, end; otherwise expand."""
     if state.get("is_complete"):
         return END
     return "expand_node"
 
 
-def _route_after_evaluate(state: MLAutoState) -> str:
+def _route_after_evaluate(state: IterativeCodingState) -> str:
     """Route after execute_and_evaluate: if FIX, go to analyze_error."""
     if state.get("decision") == "SUCCESS":
         return "backpropagate"
     return "analyze_error"
 
 
-def _should_continue(state: MLAutoState) -> str:
+def _should_continue(state: IterativeCodingState) -> str:
     """Decide whether to continue the MCTS search or stop."""
     if state.get("is_complete"):
         return END
@@ -72,7 +72,7 @@ def build_iterative_coding_graph():
     Returns:
         A compiled LangGraph ready for invocation.
     """
-    graph = StateGraph(MLAutoState)
+    graph = StateGraph(IterativeCodingState)
 
     # Add nodes
     graph.add_node("select_node", select_node)

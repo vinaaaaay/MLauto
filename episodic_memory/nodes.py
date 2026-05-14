@@ -9,7 +9,7 @@ Maps to: autogluon-assistant's RerankerAgent
 
 import logging
 
-from shared.state import MLAutoState
+from .state import EpisodicMemoryState
 from shared.llm import get_llm
 from shared.logging_config import LLMCallLogger
 
@@ -18,12 +18,12 @@ from .prompts import RERANKER_PROMPT
 logger = logging.getLogger(__name__)
 
 
-def _get_call_logger(state: MLAutoState) -> LLMCallLogger:
+def _get_call_logger(state: EpisodicMemoryState) -> LLMCallLogger:
     output_folder = state.get("output_folder", "./output")
     return LLMCallLogger(output_folder)
 
 
-def rerank_tutorials(state: MLAutoState) -> dict:
+def rerank_tutorials(state: EpisodicMemoryState) -> dict:
     """
     Episodic Memory: select the most relevant tutorials from retrieved
     candidates, then format them into a tutorial prompt.

@@ -8,7 +8,7 @@ Linear chain:
 
 from langgraph.graph import StateGraph, START, END
 
-from shared.state import MLAutoState
+from .state import PerceptionState
 from .nodes import (
     scan_data,
     find_description_files,
@@ -24,12 +24,12 @@ def build_perception_graph():
     Build and compile the Perception StateGraph.
 
     Returns:
-        A compiled LangGraph that accepts MLAutoState and returns
+        A compiled LangGraph that accepts PerceptionState and returns
         the state enriched with data_prompt, description_files,
         task_description, selected_tools, current_tool, tool_prompt,
         tutorial_retrieval, and tutorial_prompt.
     """
-    graph = StateGraph(MLAutoState)
+    graph = StateGraph(PerceptionState)
 
     # Perception nodes
     graph.add_node("scan_data", scan_data)

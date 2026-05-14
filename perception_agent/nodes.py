@@ -1,7 +1,7 @@
 """
 LangGraph node functions for the Perception Module.
 
-Each function takes MLAutoState and returns a partial state update dict.
+Each function takes PerceptionState and returns a partial state update dict.
 These map 1:1 to the original autogluon-assistant agents:
 
   scan_data               → DataPerceptionAgent
@@ -19,7 +19,7 @@ import os
 import random
 import re
 
-from shared.state import MLAutoState
+from .state import PerceptionState
 from shared.llm import get_llm
 from shared.logging_config import LLMCallLogger, log_state_snapshot
 from shared.utils import (
@@ -49,7 +49,7 @@ DEFAULT_LIBRARY = "machine learning"
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
 
-def _get_call_logger(state: MLAutoState) -> LLMCallLogger:
+def _get_call_logger(state: PerceptionState) -> LLMCallLogger:
     """Create an LLMCallLogger pointing to the run's output directory."""
     output_folder = state.get("output_folder", "./output")
     return LLMCallLogger(output_folder)
@@ -91,7 +91,7 @@ def _read_file_via_llm(llm, call_logger: LLMCallLogger, file_path: str, max_char
 
 # ─── Node: scan_data ─────────────────────────────────────────────────────
 
-def scan_data(state: MLAutoState) -> dict:
+def scan_data(state: PerceptionState) -> dict:
     """
     Scan the input data folder, group similar files, and use the LLM to
     read/summarize each file's content.
@@ -163,7 +163,7 @@ def scan_data(state: MLAutoState) -> dict:
 
 # ─── Node: find_description_files ────────────────────────────────────────
 
-def find_description_files(state: MLAutoState) -> dict:
+def find_description_files(state: PerceptionState) -> dict:
     """
     Use the LLM to identify description/README files from the data prompt.
 
@@ -204,7 +204,7 @@ def find_description_files(state: MLAutoState) -> dict:
 
 # ─── Node: generate_task_description ─────────────────────────────────────
 
-def generate_task_description(state: MLAutoState) -> dict:
+def generate_task_description(state: PerceptionState) -> dict:
     """
     Generate a concise task description from data prompt + description files.
 
@@ -254,7 +254,7 @@ def generate_task_description(state: MLAutoState) -> dict:
 
 # ─── Node: select_tools ─────────────────────────────────────────────────
 
-def select_tools(state: MLAutoState) -> dict:
+def select_tools(state: PerceptionState) -> dict:
     """
     Select and rank ML tools based on task + data.
 

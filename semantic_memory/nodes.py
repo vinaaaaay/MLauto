@@ -10,7 +10,7 @@ Maps to: autogluon-assistant's RetrieverAgent
 import logging
 import os
 
-from shared.state import MLAutoState
+from .state import SemanticMemoryState
 from shared.llm import get_llm
 from shared.logging_config import LLMCallLogger
 from shared.tool_registry import TutorialInfo
@@ -21,12 +21,12 @@ from .prompts import RETRIEVER_PROMPT
 logger = logging.getLogger(__name__)
 
 
-def _get_call_logger(state: MLAutoState) -> LLMCallLogger:
+def _get_call_logger(state: SemanticMemoryState) -> LLMCallLogger:
     output_folder = state.get("output_folder", "./output")
     return LLMCallLogger(output_folder)
 
 
-def retrieve_tutorials(state: MLAutoState) -> dict:
+def retrieve_tutorials(state: SemanticMemoryState) -> dict:
     """
     Semantic Memory: generate a search query via LLM, then perform
     FAISS + BGE semantic search over tool tutorials.

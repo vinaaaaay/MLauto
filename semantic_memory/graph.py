@@ -9,7 +9,7 @@ Can be invoked standalone or composed into a larger pipeline.
 
 from langgraph.graph import StateGraph, START, END
 
-from shared.state import MLAutoState
+from .state import SemanticMemoryState
 from .nodes import retrieve_tutorials
 
 
@@ -18,10 +18,10 @@ def build_semantic_memory_graph():
     Build and compile the Semantic Memory StateGraph.
 
     Returns:
-        A compiled LangGraph that accepts MLAutoState and returns
+        A compiled LangGraph that accepts SemanticMemoryState and returns
         the state enriched with tutorial_retrieval (list of TutorialInfo).
     """
-    graph = StateGraph(MLAutoState)
+    graph = StateGraph(SemanticMemoryState)
 
     graph.add_node("retrieve_tutorials", retrieve_tutorials)
 

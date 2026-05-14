@@ -164,32 +164,54 @@ SUGGESTED_FIX: [Specific debugging directions in 1-3 sentences without code]
 # ─── Environment prompt helper ───────────────────────────────────────────
 
 def build_environment_prompt(
-    iteration_folder: str,
+    docker_iter_folder: str,
     current_tool: str,
-    common_env_file: str = "",
-    tool_env_file: str = "",
+    common_req_file: str = "",
+    tool_req_file: str = "",
     configure_env: bool = False,
 ) -> str:
     """Build the environment setup section for the bash coder prompt.
 
-    Matches autogluon-assistant's BashCoderPrompt.get_env_prompt().
-    Uses requirements files from the tool registry when available.
+    Accepts Docker-mapped paths (e.g. /workspace/output/node_X).
+    DO NOT pass host filesystem paths — they won't exist inside the container.
     """
-    env_prompt = f"""
-Create and configure a conda environment in "conda_env" folder under {iteration_folder}:
- - Python version: 3.11
- - Activate the environment
- - pip install uv"""
+    conda_env_dir = f"{docker_iter_folder}/conda_env"
 
-    if common_env_file and tool_env_file:
-        env_prompt += f"\n - Install required packages from {common_env_file} and {tool_env_file} using uv pip install -r {tool_env_file} --prerelease=allow -r {common_env_file}"
+    env_prompt = f"""\
+Create a conda environment at "{conda_env_dir}" with Python 3.11 (skip if it already exists):
+  conda create -p "{conda_env_dir}" python=3.11 -y 2>/dev/null || true
+
+*** CRITICAL — DO NOT use `conda activate`, `source .../activate`, or any shell \
+activation command. These do not work in non-interactive Docker shells. ***
+Instead, reference the environment binaries by their full absolute path:
+  PY="{conda_env_dir}/bin/python"
+  PIP="{conda_env_dir}/bin/pip"
+  UV="{conda_env_dir}/bin/uv"
+
+Install uv:
+  "$PIP" install uv
+"""
+
+    if common_req_file and tool_req_file:
+        env_prompt += (
+            f'Install required packages (IMPORTANT: always pass --python "$PY" to uv pip install):\n'
+            f'  "$UV" pip install --python "$PY" -r "{tool_req_file}" --prerelease=allow -r "{common_req_file}"\n'
+        )
     else:
-        env_prompt += f"\n - Install required packages for {current_tool} using uv pip install"
+        env_prompt += f'Install required packages for {current_tool} (IMPORTANT: always pass --python "$PY" to uv pip install):\n  "$UV" pip install --python "$PY" <list the packages needed>\n'
 
     if not configure_env:
-        env_prompt += f"\n - Only install the exact packages specified with their dependencies.\n - Do NOT upgrade or reinstall {current_tool} if it's already at the correct version."
+        env_prompt += (
+            f"\nOnly install the exact packages specified. "
+            f"Do NOT upgrade or reinstall {current_tool} if it is already at the correct version.\n"
+        )
     else:
-        env_prompt += "\n - Install any additional packages that are needed for the python script to run successfully"
+        env_prompt += "\nInstall any additional packages needed for the python script to run successfully.\n"
+
+    env_prompt += (
+        '\nRun the Python script using the environment\'s Python (NOT the system python):\n'
+        '  "$PY" "<docker-path-to-script>"\n'
+    )
 
     return env_prompt
 

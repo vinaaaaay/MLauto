@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Tuple
 
 import faiss
 import numpy as np
-from FlagEmbedding import FlagAutoModel
+from FlagEmbedding import FlagModel
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,10 @@ class TutorialIndexer:
     def _load_embedding_model(self):
         if self.model is None:
             logger.info(f"Loading embedding model: {self.embedding_model_name}")
-            self.model = FlagAutoModel.from_finetuned(
+            self.model = FlagModel(
                 self.embedding_model_name,
                 query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
                 use_fp16=True,
-                devices=None,
-                batch_size=32,
-                normalize_embeddings=False,
             )
             logger.info("Embedding model loaded successfully")
 

@@ -16,6 +16,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict
 
 
 # ── Custom log level: DETAIL (between DEBUG=10 and INFO=20) ──
@@ -176,7 +177,7 @@ class LLMCallLogger:
 
 def log_state_snapshot(state: dict, label: str, output_dir: str) -> None:
     """
-    Save a snapshot of the current MLAutoState to a JSON file.
+    Save a snapshot of the current state dict to a JSON file.
     Useful for debugging state transitions between nodes.
     """
     logger = logging.getLogger("mlauto.state")
