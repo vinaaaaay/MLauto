@@ -1,7 +1,0 @@
-prefix=/workspace/output/node_1/conda_env
-includedir=${prefix}/include
-
-Name: XwaylandProto
-Description: Xwayland extension headers
-Version: 1.0
-Cflags: -I${includedir}

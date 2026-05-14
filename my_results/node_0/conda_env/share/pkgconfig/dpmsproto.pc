@@ -1,7 +1,0 @@
-prefix=/workspace/output/node_0/conda_env
-includedir=${prefix}/include
-
-Name: DPMSProto
-Description: DPMS extension headers
-Version: 1.2
-Cflags: -I${includedir}
