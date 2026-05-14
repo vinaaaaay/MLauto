@@ -1,7 +1,0 @@
-prefix=/workspace/output/node_0/conda_env
-includedir=${prefix}/include
- 
-Name: DRI3Proto
-Description: DRI3 extension headers
-Version: 1.4
-Cflags: -I${includedir}
