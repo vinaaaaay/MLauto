@@ -438,7 +438,7 @@ def execute_and_evaluate(state: IterativeCodingState) -> dict:
     config = state.get("config", {})
     llm = get_llm(config.get("llm"))
     call_logger = _get_call_logger(state)
-    timeout = config.get("execution", {}).get("timeout", 3600)
+    timeout = config.get("execution", {}).get("timeout", 86400)
     docker_image = config.get("execution", {}).get("docker_image", "mlauto-executor:latest")
 
     output_folder = os.path.abspath(state.get("output_folder", "./output"))

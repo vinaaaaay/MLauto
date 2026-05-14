@@ -204,6 +204,7 @@ print(embeddings.shape)
 ## Key Points
 
 - AutoGluon MultiModal automatically handles mixed data types (text, numeric features)
+- **Automatic Missing Value Handling**: AutoGluon handles missing values (NaNs) in features automatically; manual imputation or dropping rows with missing features is discouraged.
 - Log transformation of price values helps with regression performance
 - The model can be trained with minimal configuration using `predictor.fit()`
 - For real applications, increase `time_limit` and use more training data

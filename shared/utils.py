@@ -209,7 +209,7 @@ def execute_in_docker(
     input_data_folder: str,
     output_folder: str,
     docker_image: str = "mlauto-executor:latest",
-    timeout: int = 3600,
+    timeout: int = 86400,
 ) -> tuple[bool, str, str]:
     """
     Execute a bash script inside a Docker container.
@@ -233,14 +233,18 @@ def execute_in_docker(
     """
     container_name = f"mlauto-exec-{os.getpid()}-{int(time.time())}"
 
-    # Build the docker run command
+    # Build the docker run command using Named Volumes for high-performance, permission-safe caching
     docker_cmd = [
         "docker", "run",
         "--name", container_name,
         "--rm",                                             # auto-remove on exit
+        "--gpus", "all",                                    # enable GPU access
+        "--ipc=host",                                       # avoid shared memory limits
         "-v", f"{input_data_folder}:/workspace/data:ro",    # data is read-only
         "-v", f"{output_folder}:/workspace/output",         # output is read-write
         "-v", f"{bash_script_path}:/workspace/script.sh:ro",
+        "-v", "mlauto_pip_cache:/root/.cache/pip",          # high-perf named volume for pip
+        "-v", "mlauto_uv_cache:/root/.cache/uv",            # high-perf named volume for uv
         "-w", "/workspace",
         docker_image,
         "bash", "/workspace/script.sh",
@@ -284,9 +288,13 @@ def execute_in_docker(
                 if not line:
                     streams.remove(stream)
                     continue
+                
+                # Real-time console logging
                 if stream == process.stdout:
+                    print(f"  [DOCKER STDOUT] {line}", end="", flush=True)
                     stdout_chunks.append(line)
                 else:
+                    print(f"  [DOCKER STDERR] {line}", end="", flush=True)
                     stderr_chunks.append(line)
 
         if process.poll() is None:

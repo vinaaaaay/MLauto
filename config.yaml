@@ -6,7 +6,7 @@ llm:
   max_tokens: 16384
 
 execution:
-  timeout: 3600                     # per-execution timeout in seconds
+  timeout: 86400                     # per-execution timeout in seconds
   docker_image: mlauto-executor:latest
 
 # MCTS search parameters

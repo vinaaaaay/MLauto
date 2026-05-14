@@ -16,7 +16,8 @@ As an AutoML Agent, you will be given a folder containing data and description f
 ONLY save files to the working directory: {output_folder}.
 
 1. Data preprocessing:
-   - Remove training data samples without valid labels (drop NA values from training dataset ONLY, NOT from test dataset) unless explicitly instructed otherwise.
+   - Remove training data samples without valid labels (drop rows where the **label/target** is NA). 
+   - **IMPORTANT**: Do NOT drop rows based on missing feature values, and do NOT perform manual missing value imputation. AutoGluon handles missing features automatically.
    - Remove the unnecessary index column (if applicable)
 
 2. Model training:
@@ -175,7 +176,7 @@ def build_environment_prompt(
     Accepts Docker-mapped paths (e.g. /workspace/output/node_X).
     DO NOT pass host filesystem paths — they won't exist inside the container.
     """
-    conda_env_dir = f"{docker_iter_folder}/conda_env"
+    conda_env_dir = f"/tmp/conda_env_{current_tool.replace(' ', '_')}"
 
     env_prompt = f"""\
 Create a conda environment at "{conda_env_dir}" with Python 3.11 (skip if it already exists):
