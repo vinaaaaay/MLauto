@@ -13,10 +13,10 @@ execution:
 mcts:
   max_iterations: 10                # total MCTS steps
   exploration_constant: 1.414       # UCT exploration weight
-  max_debug_depth: 3                # max debug chain length
+  max_debug_depth: 5                # max debug chain length
   failure_offset: 0                 # offset before penalising failures
   failure_penalty_weight: 0.5       # weight of failure penalty in UCT
-  initial_root_children: 3          # how many root children before re-selecting
+  initial_root_children: 5          # how many root children before re-selecting
   max_debug_children: 2             # max debug expansions per failed node
   max_evolve_children: 2            # max evolve expansions per successful node
   continuous_improvement: true      # keep searching after first success

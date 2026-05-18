@@ -118,7 +118,7 @@ class LLMCallLogger:
         self.logger = logging.getLogger("mlauto.llm")
         self.call_count = 0
 
-    def call(self, llm, prompt: str, node_name: str = "unknown") -> str:
+    def call(self, llm, prompt: str, node_name: str = "unknown", mcts_node: Any = None) -> str:
         """
         Invoke the LLM, log the full prompt and response, and return the response text.
 
@@ -145,6 +145,9 @@ class LLMCallLogger:
         response = llm.invoke(prompt)
         elapsed = time.time() - start
         content = response.content
+
+        if mcts_node is not None and hasattr(mcts_node, "ai_call_time"):
+            mcts_node.ai_call_time += elapsed
 
         self.logger.info(
             f"[Call #{call_id}] {node_name} — received response "

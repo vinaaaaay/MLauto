@@ -196,6 +196,18 @@ class NodeManager:
             shutil.copytree(best_node_dir, best_run_dir)
             logger.info(f"Best run copied from node_{self._best_node.id} to best_run/")
 
+    def save_tree_json(self) -> None:
+        """Save the MCTS tree as a flat JSON file."""
+        import json
+        tree_path = os.path.join(self.output_folder, "mcts_tree.json")
+        nodes_data = [node.to_dict() for node in self.all_nodes]
+        try:
+            with open(tree_path, "w", encoding="utf-8") as f:
+                json.dump(nodes_data, f, indent=2, ensure_ascii=False)
+            logger.info(f"Saved MCTS tree JSON to: {tree_path}")
+        except Exception as e:
+            logger.error(f"Failed to save MCTS tree JSON: {e}")
+
     def visualize_tree(self) -> str:
         """Generate a text visualization of the MCTS tree."""
         lines = []

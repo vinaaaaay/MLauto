@@ -286,7 +286,12 @@ Please prioritize model architecture improvements and training optimization to e
         tutorial_prompt=tutorial_prompt or "None",
     )
 
-    response_text = call_logger.call(llm, prompt, node_name=f"generate_python_code[node={node_id}]")
+    response_text = call_logger.call(
+        llm, 
+        prompt, 
+        node_name=f"generate_python_code[node={node_id}]",
+        mcts_node=mgr.current_node if mgr else None
+    )
     python_code = extract_code(response_text, language="python")
 
     # Save to file
@@ -398,7 +403,12 @@ def generate_bash_script(state: IterativeCodingState) -> dict:
         previous_bash_script=previous_bash or "None",
     )
 
-    response_text = call_logger.call(llm, prompt, node_name=f"generate_bash_script[node={node_id}]")
+    response_text = call_logger.call(
+        llm, 
+        prompt, 
+        node_name=f"generate_bash_script[node={node_id}]",
+        mcts_node=mgr.current_node if mgr else None
+    )
     bash_script = extract_code(response_text, language="bash")
 
     # Save to file
@@ -459,6 +469,8 @@ def execute_and_evaluate(state: IterativeCodingState) -> dict:
     logger.info(f"  Timeout: {timeout}s")
 
     # Execute inside Docker
+    import time
+    start_exec = time.time()
     success, stdout, stderr = execute_in_docker(
         bash_script_path=bash_file_path,
         input_data_folder=input_folder,
@@ -466,6 +478,9 @@ def execute_and_evaluate(state: IterativeCodingState) -> dict:
         docker_image=docker_image,
         timeout=timeout,
     )
+    exec_time = time.time() - start_exec
+    if mgr and mgr.current_node:
+        mgr.current_node.execution_time = exec_time
 
     logger.info(f"  Execution {'SUCCEEDED' if success else 'FAILED'}")
 
@@ -491,7 +506,12 @@ def execute_and_evaluate(state: IterativeCodingState) -> dict:
         stderr=truncate_start(stderr) or "No standard error",
     )
 
-    content = call_logger.call(llm, prompt, node_name=f"execute_and_evaluate[node={node_id}]")
+    content = call_logger.call(
+        llm, 
+        prompt, 
+        node_name=f"execute_and_evaluate[node={node_id}]",
+        mcts_node=mgr.current_node if mgr else None
+    )
 
     # Parse decision
     decision = "FIX"
@@ -597,7 +617,12 @@ def analyze_error(state: IterativeCodingState) -> dict:
         bash_script=state.get("bash_script", ""),
     )
 
-    content = call_logger.call(llm, prompt, node_name=f"analyze_error[node={node_id}]")
+    content = call_logger.call(
+        llm, 
+        prompt, 
+        node_name=f"analyze_error[node={node_id}]",
+        mcts_node=mgr.current_node if mgr else None
+    )
 
     # Parse error analysis
     analysis_match = re.search(r"ERROR_SUMMARY:\s*(.*)", content, re.DOTALL)
@@ -644,6 +669,10 @@ def backpropagate(state: IterativeCodingState) -> dict:
 
     is_failure = decision != "SUCCESS"
     is_validated = validation_score is not None
+
+    if node:
+        import time
+        node.processing_time = time.time() - node.ctime
 
     logger.info(f"─── backpropagate [node {node.id}]: decision={decision}, "
                 f"score={validation_score}, failure={is_failure} ───")

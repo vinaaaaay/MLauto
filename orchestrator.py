@@ -190,6 +190,8 @@ class Orchestrator:
         logger.info(f"  MCTS tree saved to: {tree_path}")
         logger.info(f"\n{tree_viz}")
 
+        node_manager.save_tree_json()
+
         logger.info(f"  Output saved in: {self.output_path}")
 
         return {

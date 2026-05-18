@@ -61,6 +61,8 @@ class Node:
     stdout: str = ""
     stderr: str = ""
     execution_time: float = 0.0
+    processing_time: float = 0.0
+    ai_call_time: float = 0.0
     error_message: str = ""
     error_analysis: str = ""
 
@@ -156,3 +158,18 @@ class Node:
 
     def __hash__(self):
         return hash(self.id)
+
+    def to_dict(self) -> dict:
+        return {
+            "node_id": self.id,
+            "parent_id": self.parent.id if self.parent else None,
+            "stage": self.stage,
+            "tool_used": self.tool_used,
+            "is_successful": self.is_successful,
+            "validation_score": self.validation_score,
+            "visits": self.visits,
+            "processing_time": self.processing_time,
+            "ai_call_time": self.ai_call_time,
+            "execution_time": self.execution_time,
+        }
+
