@@ -37,3 +37,10 @@ tutorials:
 # Path to tools_registry (for tool catalog + tutorials)
 # null = use default relative path (MLauto/tools_registry)
 tool_registry_path: null
+
+# MCP Server endpoints (for semantic & episodic memory)
+# Local dev defaults; override with Lambda URLs in production
+mcp_servers:
+  semantic_memory_url: "http://localhost:8010"
+  episodic_memory_url: "http://localhost:8011"
+

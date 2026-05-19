@@ -46,13 +46,26 @@ pip install -r requirements.txt
 export OPENAI_API_KEY=sk-...
 ```
 
-### 3. Run the Pipeline
-Here is a full-fledged command to run the pipeline, with a breakdown of what each argument does:
+### 3. Start the Standalone MCP Servers
+The Semantic Memory and Episodic Memory modules run as fully standalone, standard-compliant MCP servers communicating over HTTPS (Server-Sent Events). You must start both servers first (make sure to run these from inside the `MLauto` directory so Python can resolve the packages):
 
 ```bash
-python run.py /home/administrator/dreamlab/data3 \
-    -u "Solve the leaf species classification task using the provided data. Output the final submission in a CSV file containing predictions on the test set." \
-    -o ./my_results3.2 \
+# In Terminal 1: Start Semantic Memory MCP Server (Port 8010)
+cd MLauto
+uvicorn semantic_memory.mcp_server:app --port 8010
+
+# In Terminal 2: Start Episodic Memory MCP Server (Port 8011)
+cd MLauto
+uvicorn episodic_memory.mcp_server:app --port 8011
+```
+
+### 4. Run the Pipeline
+Once both servers are running, you can launch the end-to-end MLauto agent pipeline in a separate terminal:
+
+```bash
+python run.py /home/administrator/dreamlab/data1 \
+    -u "Solve the regression problem using the provided data. Output the final submission in a CSV file containing predictions on the test set." \
+    -o ./my_results1.3 \
     -v 4 \
     -n 10    
 ```

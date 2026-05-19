@@ -1,37 +1,59 @@
 """
 LangGraph node function for the Semantic Memory Module.
 
+MCP CLIENT — calls the standalone Semantic Memory MCP server over HTTPS/SSE.
+
 Maps to: autogluon-assistant's RetrieverAgent
-  - Generates a search query via LLM
-  - Performs FAISS semantic search over tool tutorials
-  - Returns list of TutorialInfo candidates
+  - Connects to the Semantic Memory MCP server
+  - Calls the retrieve_tutorials tool
+  - Deserializes response back into TutorialInfo objects
 """
 
+import asyncio
+import json
 import logging
-import os
+from pathlib import Path
 
 from .state import SemanticMemoryState
-from shared.llm import get_llm
-from shared.logging_config import LLMCallLogger
 from shared.tool_registry import TutorialInfo
-from shared.tutorial_indexer import TutorialIndexer
-
-from .prompts import RETRIEVER_PROMPT
 
 logger = logging.getLogger(__name__)
 
+# Default MCP server URL (overridable via config)
+_DEFAULT_SERVER_URL = "http://localhost:8010"
 
-def _get_call_logger(state: SemanticMemoryState) -> LLMCallLogger:
-    output_folder = state.get("output_folder", "./output")
-    return LLMCallLogger(output_folder)
+
+async def _call_mcp_retrieve(server_url: str, arguments: dict) -> list[dict]:
+    """Connect to the Semantic Memory MCP server and call retrieve_tutorials."""
+    from mcp import ClientSession
+    from mcp.client.sse import sse_client
+
+    sse_url = f"{server_url.rstrip('/')}/sse"
+
+    async with sse_client(sse_url) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            result = await session.call_tool(
+                name="retrieve_tutorials",
+                arguments=arguments,
+            )
+
+            # MCP returns result.content as a list of content blocks
+            # For tool results, the first content block contains the text
+            if result.content and len(result.content) > 0:
+                text = result.content[0].text
+                return json.loads(text)
+            return []
 
 
 def retrieve_tutorials(state: SemanticMemoryState) -> dict:
     """
-    Semantic Memory: generate a search query via LLM, then perform
-    FAISS + BGE semantic search over tool tutorials.
+    Semantic Memory: MCP client node — calls the Semantic Memory MCP server.
 
-    Maps to: RetrieverAgent.__call__()
+    Extracts relevant fields from LangGraph state, sends them to the
+    MCP server's retrieve_tutorials tool, and deserializes the response
+    back into TutorialInfo objects for downstream nodes.
 
     Input from state:
         task_description, data_prompt, user_input, current_tool,
@@ -40,100 +62,42 @@ def retrieve_tutorials(state: SemanticMemoryState) -> dict:
     Returns:
         {"tutorial_retrieval": list[TutorialInfo]}
     """
-    logger.info("─── [Semantic Memory] retrieve_tutorials: generating search query ───")
+    logger.info("─── [Semantic Memory] retrieve_tutorials: calling MCP server ───")
 
     config = state.get("config", {})
-    tutorials_config = config.get("tutorials", {})
-    llm = get_llm(config.get("llm"))
-    call_logger = _get_call_logger(state)
+    mcp_servers = config.get("mcp_servers", {})
+    server_url = mcp_servers.get("semantic_memory_url", _DEFAULT_SERVER_URL)
 
-    current_tool = state.get("current_tool", "")
-    top_k = tutorials_config.get("num_tutorial_retrievals", 10)
-    condense = tutorials_config.get("condense_tutorials", True)
-
-    # ── Initialize tutorial indexer ──
-    registry_path = config.get("tool_registry_path")
-    indexer = TutorialIndexer(registry_path=registry_path)
+    # Build arguments for the MCP tool call
+    arguments = {
+        "task_description": state.get("task_description", ""),
+        "data_prompt": state.get("data_prompt", ""),
+        "user_input": state.get("user_input", ""),
+        "current_tool": state.get("current_tool", ""),
+        "all_error_analyses": state.get("all_error_analyses", []),
+        "config": config,
+        "output_folder": state.get("output_folder", "./output"),
+    }
 
     try:
-        loaded = indexer.load_indices()
-        if not loaded:
-            logger.info("  Building tutorial indices for the first time...")
-            indexer.build_indices()
-            indexer.save_indices()
-            logger.info("  Tutorial indices built and saved.")
+        raw_tutorials = asyncio.run(_call_mcp_retrieve(server_url, arguments))
     except Exception as e:
-        logger.error(f"  Error initializing tutorial indexer: {e}")
+        logger.error(f"  MCP call failed: {e}")
         return {"tutorial_retrieval": []}
 
-    # ── Generate search query via LLM ──
-    all_errors = "\n\n".join(state.get("all_error_analyses", [])) or "None"
-
-    prompt = RETRIEVER_PROMPT.format(
-        task_description=state.get("task_description", ""),
-        data_prompt=state.get("data_prompt", ""),
-        user_input=state.get("user_input", ""),
-        all_previous_error_analyses=all_errors,
-        selected_tool=current_tool,
-    )
-
-    response = call_logger.call(llm, prompt, node_name="semantic_memory/retrieve_tutorials")
-
-    # ── Parse search query from LLM response ──
-    search_query = response.strip().split("\n")[0].strip().strip("\"'")
-
-    # Remove unwanted prefixes (mirrors RetrieverPrompt.parse())
-    for prefix in ["search query:", "query:", "the search query is:"]:
-        if search_query.lower().startswith(prefix):
-            search_query = search_query[len(prefix):].strip()
-            break
-
-    if not search_query:
-        search_query = state.get("task_description", current_tool)[:256]
-        logger.warning("  Failed to generate search query; using task description fallback.")
-
-    if len(search_query) > 512:
-        search_query = search_query[:512]
-
-    logger.info(f"  Search query: '{search_query}'")
-
-    # ── Perform FAISS semantic search ──
-    results = indexer.search(
-        query=search_query,
-        tool_name=current_tool,
-        condensed=condense,
-        top_k=top_k,
-    )
-
-    # ── Convert to TutorialInfo objects ──
+    # ── Convert dicts back to TutorialInfo objects ──
     tutorials = []
-    for result in results:
+    for t in raw_tutorials:
         try:
-            file_path = result["file_path"]
-            content = result["content"]
-            score = result["score"]
-
-            lines = content.split("\n")
-            title = next(
-                (line.lstrip("#").strip() for line in lines if line.strip().startswith("#")),
-                os.path.splitext(os.path.basename(file_path))[0].replace("_", " ").title(),
-            )
-            summary = next(
-                (line.replace("Summary:", "").strip() for line in lines if line.strip().startswith("Summary:")),
-                "",
-            )
-
             tutorials.append(TutorialInfo(
-                path=file_path,
-                title=title,
-                summary=summary,
-                score=score,
-                content=content,
+                path=Path(t["path"]),
+                title=t["title"],
+                summary=t.get("summary", ""),
+                score=t.get("score"),
+                content=t.get("content"),
             ))
         except Exception as e:
-            logger.warning(f"  Error converting search result: {e}")
+            logger.warning(f"  Failed to deserialize tutorial: {e}")
 
-    logger.info(f"  Retrieved {len(tutorials)} tutorial candidates")
-    indexer.cleanup()
-
+    logger.info(f"  Retrieved {len(tutorials)} tutorial candidates from MCP server")
     return {"tutorial_retrieval": tutorials}

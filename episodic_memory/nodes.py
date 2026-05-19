@@ -1,34 +1,78 @@
 """
 LangGraph node function for the Episodic Memory Module.
 
+MCP CLIENT — calls the standalone Episodic Memory MCP server over HTTPS/SSE.
+
 Maps to: autogluon-assistant's RerankerAgent
-  - Takes retrieved tutorial candidates from semantic memory
-  - Uses LLM to select the most relevant ones
-  - Formats selected tutorials into a tutorial_prompt for the coder
+  - Connects to the Episodic Memory MCP server
+  - Serializes TutorialInfo objects to dicts for JSON transport
+  - Calls the rerank_tutorials tool
+  - Returns the tutorial_prompt string
 """
 
+import asyncio
+import json
 import logging
 
 from .state import EpisodicMemoryState
-from shared.llm import get_llm
-from shared.logging_config import LLMCallLogger
-
-from .prompts import RERANKER_PROMPT
 
 logger = logging.getLogger(__name__)
 
+# Default MCP server URL (overridable via config)
+_DEFAULT_SERVER_URL = "http://localhost:8011"
 
-def _get_call_logger(state: EpisodicMemoryState) -> LLMCallLogger:
-    output_folder = state.get("output_folder", "./output")
-    return LLMCallLogger(output_folder)
+
+async def _call_mcp_rerank(server_url: str, arguments: dict) -> dict:
+    """Connect to the Episodic Memory MCP server and call rerank_tutorials."""
+    # pyrefly: ignore [missing-import]
+    from mcp import ClientSession
+    from mcp.client.sse import sse_client
+
+    sse_url = f"{server_url.rstrip('/')}/sse"
+
+    async with sse_client(sse_url) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            result = await session.call_tool(
+                name="rerank_tutorials",
+                arguments=arguments,
+            )
+
+            # MCP returns result.content as a list of content blocks
+            if result.content and len(result.content) > 0:
+                text = result.content[0].text
+                return json.loads(text)
+            return {"tutorial_prompt": ""}
+
+
+def _serialize_tutorials(tutorials: list) -> list[dict]:
+    """Convert TutorialInfo NamedTuple objects to JSON-compatible dicts."""
+    serialized = []
+    for t in tutorials:
+        try:
+            # Handle both NamedTuple (TutorialInfo) and dict inputs
+            if isinstance(t, dict):
+                serialized.append(t)
+            else:
+                serialized.append({
+                    "path": str(getattr(t, "path", "")),
+                    "title": getattr(t, "title", ""),
+                    "summary": getattr(t, "summary", ""),
+                    "score": getattr(t, "score", None),
+                    "content": getattr(t, "content", None),
+                })
+        except Exception as e:
+            logger.warning(f"  Failed to serialize tutorial: {e}")
+    return serialized
 
 
 def rerank_tutorials(state: EpisodicMemoryState) -> dict:
     """
-    Episodic Memory: select the most relevant tutorials from retrieved
-    candidates, then format them into a tutorial prompt.
+    Episodic Memory: MCP client node — calls the Episodic Memory MCP server.
 
-    Maps to: RerankerAgent.__call__()
+    Serializes TutorialInfo objects from state into dicts, sends them to
+    the MCP server's rerank_tutorials tool, and returns the tutorial_prompt.
 
     Input from state:
         tutorial_retrieval (list[TutorialInfo]), task_description, data_prompt,
@@ -37,81 +81,34 @@ def rerank_tutorials(state: EpisodicMemoryState) -> dict:
     Returns:
         {"tutorial_prompt": str}
     """
-    logger.info("─── [Episodic Memory] rerank_tutorials: selecting top tutorials ───")
+    logger.info("─── [Episodic Memory] rerank_tutorials: calling MCP server ───")
 
     config = state.get("config", {})
-    tutorials_config = config.get("tutorials", {})
-    llm = get_llm(config.get("llm"))
-    call_logger = _get_call_logger(state)
+    mcp_servers = config.get("mcp_servers", {})
+    server_url = mcp_servers.get("episodic_memory_url", _DEFAULT_SERVER_URL)
 
+    # Serialize TutorialInfo objects to dicts for JSON transport
     tutorials = state.get("tutorial_retrieval", [])
-    max_num = tutorials_config.get("max_num_tutorials", 3)
-    max_length = tutorials_config.get("max_tutorial_length", 30000)
-    use_summary = tutorials_config.get("use_tutorial_summary", True)
+    serialized_tutorials = _serialize_tutorials(tutorials)
 
-    if not tutorials:
-        logger.warning("  No tutorials to rerank")
+    # Build arguments for the MCP tool call
+    arguments = {
+        "tutorial_retrieval": serialized_tutorials,
+        "task_description": state.get("task_description", ""),
+        "data_prompt": state.get("data_prompt", ""),
+        "user_input": state.get("user_input", ""),
+        "all_error_analyses": state.get("all_error_analyses", []),
+        "config": config,
+        "output_folder": state.get("output_folder", "./output"),
+    }
+
+    try:
+        result = asyncio.run(_call_mcp_rerank(server_url, arguments))
+    except Exception as e:
+        logger.error(f"  MCP call failed: {e}")
         return {"tutorial_prompt": ""}
 
-    # ── Format tutorials info for the LLM ──
-    tutorials_info_lines = []
-    for i, tutorial in enumerate(tutorials):
-        summary_text = tutorial.summary if use_summary and tutorial.summary else "(No summary available)"
-        tutorials_info_lines.append(f"{i+1}. Title: {tutorial.title}\n   Summary: {summary_text}")
-    tutorials_info = "\n".join(tutorials_info_lines)
-
-    all_errors = "\n\n".join(state.get("all_error_analyses", [])) or "None"
-
-    prompt = RERANKER_PROMPT.format(
-        task_description=state.get("task_description", ""),
-        data_prompt=state.get("data_prompt", ""),
-        user_input=state.get("user_input", ""),
-        all_previous_error_analyses=all_errors,
-        tutorials_info=tutorials_info,
-        max_num_tutorials=max_num,
-    )
-
-    response = call_logger.call(llm, prompt, node_name="episodic_memory/rerank_tutorials")
-
-    # ── Parse comma-separated indices from response ──
-    content_line = response.strip().split("\n")[0]
-    content_clean = "".join(c for c in content_line if c.isdigit() or c == ",")
-
-    selected_tutorials = []
-    if content_clean:
-        try:
-            indices = [int(idx.strip()) - 1 for idx in content_clean.split(",") if idx.strip()]
-            for idx in indices:
-                if 0 <= idx < len(tutorials):
-                    selected_tutorials.append(tutorials[idx])
-        except ValueError as e:
-            logger.warning(f"  Error parsing tutorial indices: {e}")
-
-    # ── Fallback: top tutorials by retrieval score ──
-    if not selected_tutorials:
-        logger.warning("  Reranking failed; falling back to top tutorials by score")
-        sorted_tutorials = sorted(tutorials, key=lambda t: t.score or 0.0, reverse=True)
-        selected_tutorials = sorted_tutorials[:max_num]
-    else:
-        selected_tutorials = selected_tutorials[:max_num]
-
-    # ── Format selected tutorials into the tutorial prompt ──
-    per_tutorial_length = max_length // max(1, len(selected_tutorials))
-    formatted_parts = []
-
-    for tutorial in selected_tutorials:
-        try:
-            with open(tutorial.path, "r", encoding="utf-8") as f:
-                content = f.read()
-            if len(content) > per_tutorial_length:
-                content = content[:per_tutorial_length] + "\n...(truncated)"
-            formatted_parts.append(f"### {tutorial.title}\n{content}")
-        except Exception as e:
-            logger.warning(f"  Error reading tutorial {tutorial.path}: {e}")
-
-    tutorial_prompt = "\n\n".join(formatted_parts) if formatted_parts else ""
-
-    logger.info(f"  Selected {len(selected_tutorials)} tutorials, "
-                f"prompt length: {len(tutorial_prompt)} chars")
+    tutorial_prompt = result.get("tutorial_prompt", "")
+    logger.info(f"  Received tutorial_prompt ({len(tutorial_prompt)} chars) from MCP server")
 
     return {"tutorial_prompt": tutorial_prompt}
