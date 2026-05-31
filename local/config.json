@@ -7,13 +7,13 @@
   "mcts": {
     "max_iterations": 10,
     "continuous_improvement": true,
-    "initial_root_children": 3,
+    "initial_root_children": 2,
     "exploration_constant": 1.414,
-    "max_debug_children": 2,
-    "max_evolve_children": 2,
+    "max_debug_children": 3,
+    "max_evolve_children": 3,
     "failure_offset": 0,
     "failure_penalty_weight": 0.5,
-    "max_debug_depth": 3
+    "max_debug_depth": 5
   },
   "tutorials": {
     "num_tutorial_retrievals": 5,

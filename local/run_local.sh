@@ -18,12 +18,14 @@ echo "2. Checking container status..."
 echo "===================================================="
 docker compose ps
 
+USER_PROMPT="${1:-}"
+
 echo ""
 echo "===================================================="
 echo "3. Starting benchmark run on tabular dataset..."
 echo "===================================================="
 cd ..
-python local/run_benchmark.py --datasets tabular-playground-series-may-2022 --config-file local/config.json --max-iterations 3
+python local/run_benchmark.py --datasets tabular-playground-series-may-2022 --config-file local/config.json --max-iterations 10 --user-prompt "$USER_PROMPT"
 
 echo ""
 echo "===================================================="

@@ -1,4 +1,5 @@
 import os
+os.environ["USER"] = os.environ.get("USER") or "administrator"
 import json
 import logging
 import time
@@ -41,6 +42,7 @@ async def invoke(request: Request):
     task_description = data.get("task_description", "")
     current_tool = data.get("current_tool", "")
     all_error_analyses = data.get("all_error_analyses", [])
+    run_id = data.get("run_id")
     
     extra_fields = {}
     for k, v in data.items():
@@ -57,7 +59,7 @@ async def invoke(request: Request):
         },
         "tutorials": {
             "num_tutorial_retrievals": 3,
-            "condense_tutorials": False,
+            "condense_tutorials": false,
             "max_num_tutorials": 2
         }
     }
@@ -65,9 +67,17 @@ async def invoke(request: Request):
     if "config" in extra_fields and isinstance(extra_fields["config"], dict):
         config.update(extra_fields.pop("config"))
 
+    # Resolve output folder dynamically if run_id is supplied
+    runs_dir = os.environ.get("RUNS_DIR", "/runs")
+    if run_id:
+        output_folder = os.path.join(runs_dir, run_id)
+        os.makedirs(output_folder, exist_ok=True)
+    else:
+        output_folder = "./a2a_output"
+
     initial_state = {
         "config": config,
-        "output_folder": "./a2a_output",
+        "output_folder": output_folder,
         "task_description": task_description,
         "current_tool": current_tool,
         "all_error_analyses": all_error_analyses,

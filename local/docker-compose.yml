@@ -59,13 +59,32 @@ services:
     ports:
       - "8088:8088"
     environment:
-      - VECTOR_STORE_URL=http://localhost:8010
+      - VECTOR_STORE_URL=http://mcp-server:8010
       - REGISTRY_PATH=/tools_registry
+      - USER=administrator
     env_file:
       - .env
     volumes:
       - ../runs:/runs
       - ../tools_registry:/tools_registry:ro
+    command: uvicorn a2a_server:app --host 0.0.0.0 --port 8088
+
+  mcp-server:
+    build:
+      context: ../semantic_agent
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    ports:
+      - "8010:8010"
+    environment:
+      - REGISTRY_PATH=/tools_registry
+      - USER=administrator
+    env_file:
+      - .env
+    volumes:
+      - ../runs:/runs
+      - ../tools_registry:/tools_registry:ro
+    command: python mcp_server.py
 
   coder-agent:
     build:

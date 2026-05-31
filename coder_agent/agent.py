@@ -61,6 +61,7 @@ def build_coder_agent_graph(ctx=None, metric_logger=None):
                 success, stdout, stderr = await sandbox.exec_shell(
                     command=kwargs["command"],
                     cwd=kwargs.get("cwd", "/home/gem/workspace"),
+                    timeout=kwargs.get("timeout"),
                 )
                 result = (success, stdout, stderr)
                 output = json.dumps({
@@ -393,6 +394,7 @@ Please prioritize model architecture improvements and training optimization to e
                 sandbox, "sandbox_exec_shell", "execute_and_evaluate",
                 command="bash execution_script.sh",
                 cwd=iter_folder,
+                timeout=3600,
             )
         else:
             success, stdout, stderr = False, "", "No sandbox client found in state"

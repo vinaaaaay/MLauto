@@ -1,3 +1,4 @@
+import asyncio
 import json
 import base64
 import re
@@ -74,12 +75,17 @@ class AgentInfraWSSandbox(BaseSandboxClient):
                     return False
         return True
 
-    async def exec_shell(self, command: str, cwd: str = "/home/gem/workspace") -> Tuple[bool, str, str]:
+    async def exec_shell(
+        self,
+        command: str,
+        cwd: str = "/home/gem/workspace",
+        timeout: Optional[float] = None,
+    ) -> Tuple[bool, str, str]:
         """
         Executes via WS, streams output to console, and returns final state.
         Returns: (success_boolean, complete_stdout, complete_stderr)
         """
-        logger.info(f"\\n--- WS Execution: {command} (cwd={cwd}) ---\\n")
+        logger.info(f"\n--- WS Execution: {command} (cwd={cwd}, timeout={timeout}) ---\n")
         
         wrapped_command = f"( {command} ) 2>&1"
         full_command = f"cd {cwd} && {wrapped_command}" if cwd else wrapped_command
@@ -92,32 +98,43 @@ class AgentInfraWSSandbox(BaseSandboxClient):
         exit_code = 1 
 
         try:
-            async with websockets.connect(self.ws_url, ping_interval=None, ping_timeout=None) as ws:
-                async for msg in ws:
-                    obj = json.loads(msg)
-                    msg_type = obj.get("type")
-                    
-                    if msg_type == "ready":
-                        await ws.send(json.dumps({"type": "input", "data": wrapper_cmd}))
+            async def run_ws():
+                nonlocal exit_code, accumulated_output
+                async with websockets.connect(self.ws_url, ping_interval=None, ping_timeout=None) as ws:
+                    async for msg in ws:
+                        obj = json.loads(msg)
+                        msg_type = obj.get("type")
                         
-                    elif msg_type == "ping":
-                        await ws.send(json.dumps({"type": "pong", "data": obj.get("data")}))
-                        
-                    elif msg_type == "output":
-                        data = obj.get("data", "")
-                        print(data, end="", flush=True)
-                        accumulated_output += data
-                        
-                        # Search only the last 1000 chars to avoid O(N) scaling, and use regex to ensure we match the actual exit code, not the echoed command
-                        tail = accumulated_output[-1000:]
-                        match = re.search(r"___CMD_FINISHED___:([0-9]+)", tail)
-                        if match:
-                            exit_code = int(match.group(1))
-                            break
+                        if msg_type == "ready":
+                            await ws.send(json.dumps({"type": "input", "data": wrapper_cmd}))
                             
+                        elif msg_type == "ping":
+                            await ws.send(json.dumps({"type": "pong", "data": obj.get("data")}))
+                            
+                        elif msg_type == "output":
+                            data = obj.get("data", "")
+                            print(data, end="", flush=True)
+                            accumulated_output += data
+                            
+                            # Search only the last 1000 chars to avoid O(N) scaling, and use regex to ensure we match the actual exit code, not the echoed command
+                            tail = accumulated_output[-1000:]
+                            match = re.search(r"___CMD_FINISHED___:([0-9]+)", tail)
+                            if match:
+                                exit_code = int(match.group(1))
+                                break
+
+            if timeout is not None:
+                await asyncio.wait_for(run_ws(), timeout=timeout)
+            else:
+                await run_ws()
+
+        except asyncio.TimeoutError:
+            error_msg = f"Command execution timed out after {timeout} seconds"
+            logger.error(error_msg)
+            return False, accumulated_output, error_msg
         except Exception as e:
             logger.error(f"WS Execution Error: {e}")
             return False, accumulated_output, str(e)
             
-        logger.info(f"\\n--- WS Execution Complete (Exit: {exit_code}) ---\\n")
+        logger.info(f"\n--- WS Execution Complete (Exit: {exit_code}) ---\n")
         return (exit_code == 0), accumulated_output, ""

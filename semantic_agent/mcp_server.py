@@ -1,12 +1,23 @@
-"""
-Vector Store MCP Server.
-
-Strictly handles document indexing and retrieval using FAISS + BGE embeddings.
-Decoupled data parser layer allows swapping data sources or document types easily.
-Exposes a single tool endpoint: retrieve_tutorials.
-"""
+import os
+# Set default USER env var to avoid pwd.getpwuid lookup error in scratch-built Docker containers
+os.environ["USER"] = os.environ.get("USER") or "administrator"
 
 import logging
+
+# Monkeypatch to resolve PyTorch/Transformers "precompile already registered" bug
+try:
+    import torch.compiler._cache as tc_cache
+    def safe_register(cls, factory):
+        if not hasattr(cls, "_factories"):
+            cls._factories = {}
+        if factory.type not in cls._factories:
+            cls._factories[factory.type] = factory
+        return factory
+    tc_cache.CacheArtifactFactory.register = classmethod(safe_register)
+    logging.getLogger("vector_store_mcp").info("Applied PyTorch CacheArtifactFactory double-registration monkeypatch.")
+except Exception:
+    pass
+
 import os
 import contextlib
 import io
@@ -124,6 +135,28 @@ class _TutorialIndexer:
         """Load BGE model lazily to avoid cold start issues."""
         if self.model is None:
             logger.info(f"Loading embedding model: {self.embedding_model_name}")
+            
+            # Apply double registration monkeypatch directly before importing FlagEmbedding
+            try:
+                import torch
+                import torch.compiler._cache as tc_cache
+                def safe_register(cls, factory):
+                    if not hasattr(cls, "_factories"):
+                        cls._factories = {}
+                    if factory.type not in cls._factories:
+                        cls._factories[factory.type] = factory
+                    return factory
+                tc_cache.CacheArtifactFactory.register = classmethod(safe_register)
+                logger.info("Directly applied CacheArtifactFactory monkeypatch before FlagEmbedding import.")
+            except Exception as e:
+                logger.warning(f"Could not apply CacheArtifactFactory patch in _load_model: {e}")
+                
+            try:
+                import transformers
+                logger.info("Successfully pre-loaded transformers.")
+            except Exception as e:
+                logger.warning(f"Could not pre-load transformers in _load_model: {e}")
+                
             from FlagEmbedding import FlagModel
             self.model = FlagModel(
                 self.embedding_model_name,
@@ -301,5 +334,5 @@ if __name__ == "__main__":
         sys.path.insert(0, str(curr_dir))
         
     logger.info("Starting Semantic Vector Store MCP Server on port 8010...")
-    uvicorn.run("mcp_server:app", host="127.0.0.1", port=8010, log_level="info")
+    uvicorn.run("mcp_server:app", host="0.0.0.0", port=8010, log_level="info")
 

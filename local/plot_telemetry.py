@@ -141,8 +141,8 @@ def parse_span_breakdown(run_folder):
     # Sort spans chronologically by min_ts
     sorted_spans = sorted(spans_data.items(), key=lambda x: x[1]["min_ts"])
     
-    # Filter out empty spans
-    sorted_spans = [item for item in sorted_spans if sum([item[1]["llm_s"], item[1]["write_s"], item[1]["shell_s"]]) > 0.1]
+    # Do not filter out empty spans, so we get a bar for every node.
+    # sorted_spans = [item for item in sorted_spans if sum([item[1]["llm_s"], item[1]["write_s"], item[1]["shell_s"]]) > 0.1]
     
     # Fallback if no spans found
     if not sorted_spans:
@@ -177,8 +177,8 @@ def parse_span_breakdown(run_folder):
                     breakdown[span_key]["write_s"] += latency_s
                     
         for idx, (k, v) in enumerate(breakdown.items()):
-            if sum(v.values()) > 0.1:
-                sorted_spans.append((f"Span {idx+1}", v))
+            # Include all nodes without filtering by threshold
+            sorted_spans.append((f"Node {idx}", v))
                 
     return sorted_spans
 
@@ -259,19 +259,10 @@ def generate_graphs(run_folder):
 
     # Plot Graph 1
     fig, ax = plt.subplots(figsize=(11, 8.5))
-    plt.subplots_adjust(top=0.83, bottom=0.22)
+    plt.subplots_adjust(top=0.92, bottom=0.22)
     
-    # Elegant CDS Department top banner
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
-    
-    banner_rect = plt.Rectangle((0, 0.93), 1, 0.07, transform=fig.transFigure, color='#2980B9', zorder=10)
-    fig.patches.append(banner_rect)
-    fig.text(0.5, 0.965, "CDS.IISc.ac.in | Department of Computational and Data Sciences", 
-             fontsize=12, color='white', weight='bold', ha='center', va='center', zorder=11, family='sans-serif')
-             
-    fig.text(0.5, 0.89, "FAME++ : Motivation plot for 4 (Long Orchestration)", 
-             fontsize=18, color='#2980B9', weight='bold', ha='center', va='center', family='sans-serif')
 
     # Line segments
     x_coords = list(range(len(steps)))
@@ -300,34 +291,7 @@ def generate_graphs(run_folder):
         ax.plot(idx, step["cumulative_min"], marker='o', color=color, markersize=8, 
                 label=label, zorder=3, linestyle='None')
                 
-    # Horizontal threshold line
-    ax.axhline(15, color='red', linestyle='--', linewidth=1.5, label='15 Min Threshold')
-    
-    # Detect the first step that crosses the 15-minute threshold
-    crossed_idx = None
-    for idx, step in enumerate(steps):
-        if step["cumulative_min"] > 15.0:
-            crossed_idx = idx
-            break
-            
-    motivation_criteria_met = False
-    if crossed_idx is not None:
-        motivation_criteria_met = True
-        # Plot red star on crossed node
-        ax.plot(crossed_idx, steps[crossed_idx]["cumulative_min"], marker='*', color='red', 
-                markersize=14, markeredgecolor='black', markeredgewidth=1.2, zorder=5)
-        # Annotation arrow to the crossed node
-        ax.annotate(
-            f"Crosses 15m limit\n(Step {crossed_idx}: {steps[crossed_idx]['agent']})",
-            xy=(crossed_idx, steps[crossed_idx]["cumulative_min"]),
-            xytext=(crossed_idx - 3.5, steps[crossed_idx]["cumulative_min"] + 2.5),
-            arrowprops=dict(facecolor='black', arrowstyle="->", connectionstyle="arc3,rad=.15"),
-            color='darkred',
-            fontweight='bold',
-            fontsize=9.5,
-            bbox=dict(boxstyle="round,pad=0.3", fc="#FDEDEC", ec="darkred", lw=1.2, alpha=0.95),
-            zorder=6
-        )
+    # Horizontal threshold line removed as per user request
 
     # Set titles and axes
     ax.set_title("End-to-End Execution Latency Accumulation", fontsize=13, weight='bold', pad=12, family='sans-serif')
@@ -344,18 +308,15 @@ def generate_graphs(run_folder):
     # Legend
     ax.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#BDC3C7', framealpha=0.9, fontsize=9.5)
     
-    # Details section at the bottom left
+    # Details section placed correctly (anchored relative to axes)
     details_text = (
         f"Details:\n"
         f"  -   Use case: {dataset_name}\n"
-        f"  -   Dataset size: {dataset_size}\n"
-        f"  -   Motivation Criteria met: {motivation_criteria_met}"
+        f"  -   Dataset size: {dataset_size}"
     )
-    fig.text(0.08, 0.05, details_text, fontsize=10, family='monospace', color='#2C3E50',
-             bbox=dict(boxstyle="round,pad=0.4", fc="#F4F6F7", ec="#BDC3C7", lw=1))
-             
-    # Slide number label at bottom right
-    fig.text(0.92, 0.05, "41", fontsize=14, color='#7F8C8D', weight='bold', ha='right')
+    ax.text(0.01, 0.96, details_text, transform=ax.transAxes, fontsize=10, 
+            family='monospace', color='#2C3E50', verticalalignment='top',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.8, edgecolor='#BDC3C7'))
 
     timeline_path = os.path.join(run_folder, "execution_timeline.png")
     plt.savefig(timeline_path, dpi=150)
@@ -368,29 +329,28 @@ def generate_graphs(run_folder):
     if not sorted_spans:
         # Fallback dummy values to match the slide
         sorted_spans = [
-            ("Span 1", {"llm_s": 15.0, "write_s": 3.4, "shell_s": 305.3}),
-            ("Span 2", {"llm_s": 18.0, "write_s": 5.7, "shell_s": 900.1})
+            ("0", {"llm_s": 15.0, "write_s": 3.4, "shell_s": 305.3}),
+            ("1", {"llm_s": 18.0, "write_s": 5.7, "shell_s": 900.1})
         ]
 
-    labels = [f"Span {idx+1}" for idx in range(len(sorted_spans))]
+    # Create labels using the actual node ID from the span_key
+    labels = []
+    for s in sorted_spans:
+        key = s[0]
+        if str(key).startswith("Node"):
+            labels.append(str(key))
+        else:
+            labels.append(f"Node {key}")
+            
     llm_times = [s[1]["llm_s"] for s in sorted_spans]
     write_times = [s[1]["write_s"] for s in sorted_spans]
     shell_times = [s[1]["shell_s"] for s in sorted_spans]
     
     fig, ax = plt.subplots(figsize=(11, 8.5))
-    plt.subplots_adjust(top=0.83, bottom=0.15)
+    plt.subplots_adjust(top=0.92, bottom=0.25)
     
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
-    
-    # Elegant CDS Department top banner
-    banner_rect = plt.Rectangle((0, 0.93), 1, 0.07, transform=fig.transFigure, color='#2980B9', zorder=10)
-    fig.patches.append(banner_rect)
-    fig.text(0.5, 0.965, "CDS.IISc.ac.in | Department of Computational and Data Sciences", 
-             fontsize=12, color='white', weight='bold', ha='center', va='center', zorder=11, family='sans-serif')
-             
-    fig.text(0.5, 0.89, "FAME++ : Motivation plot for 1 (Long Tool Call)", 
-             fontsize=18, color='#2980B9', weight='bold', ha='center', va='center', family='sans-serif')
 
     # Draw stacked bar chart
     x = range(len(labels))
@@ -429,10 +389,10 @@ def generate_graphs(run_folder):
                     ha='center', va='center', fontsize=8.5, color='white', fontweight='bold')
 
     ax.set_ylabel('Duration (Seconds)', fontsize=11, family='sans-serif')
-    ax.set_title('E2E Execution Latency Breakdown per Span', fontsize=13, weight='bold', pad=12, family='sans-serif')
+    ax.set_title('E2E Execution Latency Breakdown per Node', fontsize=13, weight='bold', pad=12, family='sans-serif')
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=10, family='sans-serif')
-    ax.set_xlabel('Execution Spans', fontsize=11, family='sans-serif')
+    ax.set_xlabel('Execution Nodes', fontsize=11, family='sans-serif')
     
     ax.grid(True, linestyle=':', alpha=0.5, color='#BDC3C7')
     ax.spines['top'].set_visible(False)
@@ -443,18 +403,15 @@ def generate_graphs(run_folder):
     # Legend
     ax.legend(loc='upper right', title="Total:", frameon=True, facecolor='white', edgecolor='#BDC3C7', fontsize=9)
     
-    # Details section at the top right (placed next to chart inside layout)
+    # Details section placed correctly (anchored relative to axes)
     details_text = (
         f"Details:\n"
-        f"  -   Use case:\n      {dataset_name}\n"
-        f"  -   Dataset size: {dataset_size}\n"
-        f"  -   Motivation Criteria met: {motivation_criteria_met}"
+        f"  -   Use case: {dataset_name}\n"
+        f"  -   Dataset size: {dataset_size}"
     )
-    fig.text(0.70, 0.65, details_text, fontsize=10, family='monospace', color='#2C3E50',
-             bbox=dict(boxstyle="round,pad=0.4", fc="#F4F6F7", ec="#BDC3C7", lw=1))
-             
-    # Slide number label at bottom right
-    fig.text(0.92, 0.05, "40", fontsize=14, color='#7F8C8D', weight='bold', ha='right')
+    ax.text(0.01, 0.96, details_text, transform=ax.transAxes, fontsize=10, 
+            family='monospace', color='#2C3E50', verticalalignment='top',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.8, edgecolor='#BDC3C7'))
 
     breakdown_path = os.path.join(run_folder, "node_time_breakdown.png")
     plt.savefig(breakdown_path, dpi=150)

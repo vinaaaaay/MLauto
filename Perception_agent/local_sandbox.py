@@ -5,7 +5,7 @@ import httpx
 import websockets
 import logging
 import urllib.parse
-from typing import Tuple
+from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +71,13 @@ class LocalSandboxClient:
                     return False
         return True
 
-    async def exec_shell(self, command: str, cwd: str = "/home/gem/workspace") -> Tuple[bool, str, str]:
-        logger.info(f"\\n--- WS Execution: {command} (cwd={cwd}) ---\\n")
+    async def exec_shell(
+        self,
+        command: str,
+        cwd: str = "/home/gem/workspace",
+        timeout: Optional[float] = None,
+    ) -> Tuple[bool, str, str]:
+        logger.info(f"\n--- WS Execution: {command} (cwd={cwd}, timeout={timeout}) ---\n")
         
         wrapped_command = f"( {command} ) 2>&1"
         full_command = f"cd {cwd} && {wrapped_command}" if cwd else wrapped_command
@@ -85,33 +90,41 @@ class LocalSandboxClient:
         exit_code = 1 
 
         try:
-            async with websockets.connect(self.ws_url) as ws:
-                async for msg in ws:
-                    obj = json.loads(msg)
-                    msg_type = obj.get("type")
-                    
-                    if msg_type == "ready":
-                        await ws.send(json.dumps({"type": "input", "data": wrapper_cmd}))
+            async def run_ws():
+                nonlocal exit_code, accumulated_output
+                async with websockets.connect(self.ws_url) as ws:
+                    async for msg in ws:
+                        obj = json.loads(msg)
+                        msg_type = obj.get("type")
                         
-                    elif msg_type == "ping":
-                        await ws.send(json.dumps({"type": "pong", "data": obj.get("data")}))
-                        
-                    elif msg_type == "output":
-                        data = obj.get("data", "")
-                        print(data, end="", flush=True)
-                        accumulated_output += data
-                        
-                        clean_output = re.sub(r'\x1b\[[0-9;?]*[a-zA-Z]', '', accumulated_output)
-                        match = re.search(r"___CMD_FINISHED___:([0-9]+)", clean_output)
-                        if match:
-                            exit_code = int(match.group(1))
-                            break
+                        if msg_type == "ready":
+                            await ws.send(json.dumps({"type": "input", "data": wrapper_cmd}))
+                            
+                        elif msg_type == "ping":
+                            await ws.send(json.dumps({"type": "pong", "data": obj.get("data")}))
+                            
+                        elif msg_type == "output":
+                            data = obj.get("data", "")
+                            print(data, end="", flush=True)
+                            accumulated_output += data
+                            
+                            clean_output = re.sub(r'\x1b\[[0-9;?]*[a-zA-Z]', '', accumulated_output)
+                            match = re.search(r"___CMD_FINISHED___:([0-9]+)", clean_output)
+                            if match:
+                                exit_code = int(match.group(1))
+                                break
+
+            if timeout is not None:
+                import asyncio
+                await asyncio.wait_for(run_ws(), timeout=timeout)
+            else:
+                await run_ws()
                             
         except Exception as e:
             logger.error(f"WS Execution Error: {e}")
             return False, accumulated_output, str(e)
             
-        logger.info(f"\\n--- WS Execution Complete (Exit: {exit_code}) ---\\n")
+        logger.info(f"\n--- WS Execution Complete (Exit: {exit_code}) ---\n")
         return (exit_code == 0), accumulated_output, ""
 
     def _run_sync(self, coro):
@@ -144,5 +157,10 @@ class LocalSandboxClient:
     def write_file_sync(self, path: str, content: str) -> bool:
         return self._run_sync(self.write_file(path, content))
 
-    def exec_shell_sync(self, command: str, cwd: str = "/home/gem/workspace") -> Tuple[bool, str, str]:
-        return self._run_sync(self.exec_shell(command, cwd))
+    def exec_shell_sync(
+        self,
+        command: str,
+        cwd: str = "/home/gem/workspace",
+        timeout: Optional[float] = None,
+    ) -> Tuple[bool, str, str]:
+        return self._run_sync(self.exec_shell(command, cwd, timeout))

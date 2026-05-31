@@ -9,7 +9,7 @@ from datetime import datetime
 
 ORCHESTRATOR_URL = "http://localhost:8000"
 
-def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 3, config: dict = None):
+def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 3, config: dict = None, user_prompt: str = ""):
     run_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{dataset_name}"
     
     # We mount mle_bench_path to /home/gem/workspace/data in sandbox
@@ -18,7 +18,7 @@ def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 
     payload = {
         "run_id": run_id,
         "input_data_folder": input_data_folder,
-        "user_input": "",
+        "user_input": user_prompt,
         "config": config or {},
         "max_iterations": max_iterations
     }
@@ -53,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument("--mle-bench-path", type=str, default="/home/administrator/dreamlab/mle-bench-lite", help="Path to mle-bench-lite datasets")
     parser.add_argument("--max-iterations", type=int, default=3, help="Max MCTS iterations")
     parser.add_argument("--config-file", type=str, help="Path to a JSON configuration file (e.g., config.example.json)")
+    parser.add_argument("--user-prompt", type=str, default="", help="Optional user prompt / instruction")
     args = parser.parse_args()
     
     config = {}
@@ -70,4 +71,4 @@ if __name__ == "__main__":
             exit(1)
             
     for ds in datasets:
-        run_benchmark(ds.strip(), args.mle_bench_path, args.max_iterations, config)
+        run_benchmark(ds.strip(), args.mle_bench_path, args.max_iterations, config, args.user_prompt)
