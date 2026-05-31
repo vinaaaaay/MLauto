@@ -1,0 +1,100 @@
+# Build all images: docker compose build
+# Run containers in background: docker compose up -d
+version: "3.8"
+
+services:
+  orchestrator:
+    build:
+      context: ../mlorchestrator
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    ports:
+      - "8000:8000"
+    environment:
+      - PERCEPTION_URL=http://perception-agent:8020
+      - MCTS_URL=http://mcts-handler:8001
+      - SEMANTIC_URL=http://semantic-agent:8088
+      - CODER_URL=http://coder-agent:8089
+    volumes:
+      - ../runs:/runs
+
+  mcts-handler:
+    build:
+      context: ../mcts_handler
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    ports:
+      - "8001:8001"
+    environment:
+      - STORAGE_MODE=local
+      - RUNS_DIR=/runs
+    volumes:
+      - ../runs:/runs
+
+  perception-agent:
+    build:
+      context: ../Perception_agent
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    ports:
+      - "8020:8020"
+    environment:
+      - SANDBOX_MODE=local
+      - SANDBOX_URL=http://sandbox:8080
+      - REGISTRY_PATH=/tools_registry
+    env_file:
+      - .env
+    volumes:
+      - ../runs:/runs
+      - ../tools_registry:/tools_registry:ro
+      - ../telemetry:/app/telemetry:ro
+
+
+
+  semantic-agent:
+    build:
+      context: ../semantic_agent
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    ports:
+      - "8088:8088"
+    environment:
+      - VECTOR_STORE_URL=http://localhost:8010
+      - REGISTRY_PATH=/tools_registry
+    env_file:
+      - .env
+    volumes:
+      - ../runs:/runs
+      - ../tools_registry:/tools_registry:ro
+
+  coder-agent:
+    build:
+      context: ../coder_agent
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    ports:
+      - "8089:8089"
+    environment:
+      - SANDBOX_MODE=local
+      - SANDBOX_URL=http://sandbox:8080
+      - REGISTRY_PATH=/tools_registry
+    env_file:
+      - .env
+    volumes:
+      - ../runs:/runs
+      - ../tools_registry:/tools_registry:ro
+      - ../telemetry:/app/coder_agent/telemetry:ro
+
+
+
+  sandbox:
+    build:
+      context: ..
+      dockerfile: local/SandboxDockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ${MLE_BENCH_PATH:-/home/administrator/dreamlab/mle-bench-lite}:/home/gem/workspace/data:ro

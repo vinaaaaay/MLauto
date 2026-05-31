@@ -1,0 +1,7 @@
+test/
+__pycache__/
+*.pyc
+.env
+README.md
+tools/mcp_client.py
+tools/ec2/

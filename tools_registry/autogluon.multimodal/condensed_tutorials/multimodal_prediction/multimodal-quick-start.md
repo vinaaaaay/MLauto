@@ -66,11 +66,11 @@ predictor = MultiModalPredictor(label=label_col).fit(
 )
 ```
 
+Key features:
 - Automatically infers problem type (classification/regression)
-- Detects data modalities
+- Detects feature modalities
 - Selects appropriate models
-- Automatically handles missing values (NaNs) in features; manual imputation or dropping rows with missing features is discouraged.
-- Trains with late-fusion if multiple backbones are available
+- Adds late-fusion model (MLP or transformer) for multiple backbones
 
 ## Prediction
 

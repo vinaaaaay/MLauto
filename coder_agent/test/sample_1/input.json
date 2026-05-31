@@ -1,0 +1,16 @@
+{
+  "task_description": "Read train.json and test.json using pandas or python's json module, train a classifier to predict whether a reddit request will receive a pizza (the label is 'requester_received_pizza'). Output predicted probabilities for the test set to 'results.csv' in the output folder. The model is evaluated using the Area under the ROC curve (AUC-ROC) metric. Please print explicit checkpoint statements at each phase (e.g., 'Starting preprocessing...', 'Training model...', 'Evaluating model...', 'Generating predictions...', 'Saving results...', 'Validation checks passed!').",
+  "data_prompt": "The dataset files are located at /tmp/mlebench-lite/random-acts-of-pizza/prepared. The files are train.json, test.json, and sampleSubmission.csv. The label column is 'requester_received_pizza' (boolean/binary). Predict the probabilities on the test set and output predictions matching sample submission column formats:\nrequest_id,requester_received_pizza\nt3_1aw5zf,0.15\nt3_roiuw,0.0\n...",
+  "user_input": "Train a classifier model on the random acts of pizza dataset using scikit-learn and print explicit checkpoints.",
+  "current_tool": "pandas",
+  "tool_prompt": "Use pandas and scikit-learn to make baseline predictions with clear print checkpoints.",
+  "tutorial_prompt": "",
+  "all_error_analyses": [],
+  "previous_python_code": "",
+  "previous_bash_script": "",
+  "stage": "root",
+  "iteration": 0,
+  "config": {
+    "tool_registry_path": ""
+  }
+}

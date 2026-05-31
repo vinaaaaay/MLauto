@@ -1,0 +1,4 @@
+# Ignore local test frameworks and testing outputs
+test/
+test_output/
+a2a_output/
