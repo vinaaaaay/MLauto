@@ -109,7 +109,7 @@ def build_semantic_agent_graph():
         logger.info(f"Generated search query: '{search_query}'")
         return {"search_query": search_query}
 
-    def retrieve_tutorials(state: SemanticAgentState) -> dict:
+    async def retrieve_tutorials(state: SemanticAgentState) -> dict:
         """MCP client node — calls the standalone Vector Store MCP server using the client wrapper."""
         logger.info("─── [Semantic Agent] retrieve_tutorials ───")
 
@@ -128,12 +128,12 @@ def build_semantic_agent_graph():
         client = VectorStoreMCPClient(server_url)
 
         try:
-            raw_tutorials = asyncio.run(client.retrieve_tutorials(
+            raw_tutorials = await client.retrieve_tutorials(
                 query=query,
                 tool_name=tool_name,
                 top_k=top_k,
                 condensed=condensed
-            ))
+            )
         except Exception as e:
             logger.error(f"Vector Store MCP retrieval call failed: {e}")
             raw_tutorials = []

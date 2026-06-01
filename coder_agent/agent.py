@@ -205,10 +205,20 @@ Please prioritize model architecture improvements and training optimization to e
         tutorial_prompt = _docker_translate(state.get("tutorial_prompt", ""))
         all_error_analyses = _docker_translate(all_error_analyses)
 
+        # Resolve the correct tool prompt dynamically from the tool registry if possible
+        registry_path = config.get("tool_registry_path")
+        current_tool = state.get("current_tool", "")
+        tool_prompt = ""
+        if registry_path and current_tool:
+            from .utils import get_tool_prompt
+            tool_prompt = get_tool_prompt(registry_path, current_tool)
+        if not tool_prompt:
+            tool_prompt = state.get("tool_prompt", "")
+
         prompt = PYTHON_CODER_PROMPT.format(
-            current_tool=state.get("current_tool", ""),
+            current_tool=current_tool,
             output_folder=per_iter_output,
-            tool_prompt=state.get("tool_prompt", ""),
+            tool_prompt=tool_prompt,
             code_improvement_prompt=code_improvement_prompt,
             validation_prompt=validation_prompt,
             task_description=task_description,

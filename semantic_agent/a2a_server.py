@@ -35,62 +35,63 @@ logger.info("Semantic Agent LangGraph pipeline compiled successfully.")
 @app.post("/invoke")
 async def invoke(request: Request):
     try:
-        data = await request.json()
-    except Exception:
-        data = {}
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+            
+        task_description = data.get("task_description", "")
+        current_tool = data.get("current_tool", "")
+        all_error_analyses = data.get("all_error_analyses", [])
+        run_id = data.get("run_id")
         
-    task_description = data.get("task_description", "")
-    current_tool = data.get("current_tool", "")
-    all_error_analyses = data.get("all_error_analyses", [])
-    run_id = data.get("run_id")
-    
-    extra_fields = {}
-    for k, v in data.items():
-        if k not in ["task_description", "current_tool", "all_error_analyses", "skill", "run_id"]:
-            extra_fields[k] = v
+        extra_fields = {}
+        for k, v in data.items():
+            if k not in ["task_description", "current_tool", "all_error_analyses", "skill", "run_id"]:
+                extra_fields[k] = v
 
-    config = {
-        "llm": {
-            "model": "gpt-4o-mini",
-            "temperature": 0.1
-        },
-        "mcp_servers": {
-            "vector_store_url": os.environ.get("VECTOR_STORE_URL", "http://localhost:8010")
-        },
-        "tutorials": {
-            "num_tutorial_retrievals": 3,
-            "condense_tutorials": false,
-            "max_num_tutorials": 2
+        config = {
+            "llm": {
+                "model": "gpt-4o-mini",
+                "temperature": 0.1
+            },
+            "mcp_servers": {
+                "vector_store_url": os.environ.get("VECTOR_STORE_URL", "http://localhost:8010")
+            },
+            "tutorials": {
+                "num_tutorial_retrievals": 3,
+                "condense_tutorials": False,
+                "max_num_tutorials": 2
+            }
         }
-    }
-    
-    if "config" in extra_fields and isinstance(extra_fields["config"], dict):
-        config.update(extra_fields.pop("config"))
+        
+        if "config" in extra_fields and isinstance(extra_fields["config"], dict):
+            config.update(extra_fields.pop("config"))
 
-    # Resolve output folder dynamically if run_id is supplied
-    runs_dir = os.environ.get("RUNS_DIR", "/runs")
-    if run_id:
-        output_folder = os.path.join(runs_dir, run_id)
-        os.makedirs(output_folder, exist_ok=True)
-    else:
-        output_folder = "./a2a_output"
+        # Resolve output folder dynamically if run_id is supplied
+        runs_dir = os.environ.get("RUNS_DIR", "/runs")
+        if run_id:
+            output_folder = os.path.join(runs_dir, run_id)
+            os.makedirs(output_folder, exist_ok=True)
+        else:
+            output_folder = "./a2a_output"
 
-    initial_state = {
-        "config": config,
-        "output_folder": output_folder,
-        "task_description": task_description,
-        "current_tool": current_tool,
-        "all_error_analyses": all_error_analyses,
-        **extra_fields
-    }
+        initial_state = {
+            "config": config,
+            "output_folder": output_folder,
+            "task_description": task_description,
+            "current_tool": current_tool,
+            "all_error_analyses": all_error_analyses,
+            **extra_fields
+        }
 
-    try:
         result = await _graph.ainvoke(initial_state)
         tutorial_prompt = result.get("tutorial_prompt", "")
         return JSONResponse({"tutorial_prompt": tutorial_prompt})
     except Exception as e:
         logger.error(f"Error during semantic graph execution: {e}")
-        return JSONResponse({"error": str(e)}, status_code=500)
+        import traceback
+        return JSONResponse({"error": str(e), "detail": traceback.format_exc()}, status_code=500)
 
 @app.get("/health")
 def health():

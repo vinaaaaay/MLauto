@@ -32,7 +32,7 @@ ONLY save files to the working directory: {output_folder}.
 5. Others:
    - To avoid DDP errors, wrap the code in: if __name__ == "__main__":
    - Ensure errors are propagated up and not silently caught - do not use try/except blocks unless you explicitly re-raise the exception.
-   - **CRITICAL**: Do NOT use `n_jobs=-1` or parallel/multiprocess execution. Always run single-threaded. NEVER pass `n_jobs=1` to AutoGluon's `fit` function, as it will raise a ValueError. To prevent CPU lockups/deadlocks in the sandbox with AutoGluon Tabular, you MUST force sequential fitting by passing `ag_args_ensemble={{'fold_fitting_strategy': 'sequential_local'}}` to `.fit()`.
+   - **CRITICAL**: Do NOT use `n_jobs=-1` or parallel/multiprocess execution. Always run single-threaded. NEVER pass `n_jobs=1` to AutoGluon's `fit` function, as it will raise a ValueError. To prevent CPU lockups/deadlocks in the sandbox with AutoGluon Tabular, you MUST force sequential fitting (if and ONLY if using `autogluon.tabular`) by passing `ag_args_ensemble={{'fold_fitting_strategy': 'sequential_local'}}` to `.fit()`. Do NOT pass `ag_args_ensemble` to other libraries or tools (such as `autogluon.multimodal` or `FlagEmbedding`) as they do not support it and will raise a TypeError.
 
 {validation_prompt}
 

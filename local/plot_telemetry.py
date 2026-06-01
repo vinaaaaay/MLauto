@@ -95,14 +95,33 @@ def parse_span_breakdown(run_folder):
                 except Exception:
                     pass
     
-    # Group by span (e.g. node_id or iteration)
-    spans_data = {}
+    # First pass: map span_id to iteration or node_id
+    span_to_key = {}
     for ev in events:
+        span_id = ev.get("span_id")
+        if not span_id:
+            continue
         node_id = ev.get("node_id")
         iteration = ev.get("iteration")
-        span_key = node_id if node_id is not None else iteration
+        key = node_id if node_id is not None else iteration
+        if key is not None:
+            span_to_key[span_id] = key
+
+    # Second pass: group by span key
+    spans_data = {}
+    for ev in events:
+        span_id = ev.get("span_id")
+        span_key = span_to_key.get(span_id) if span_id else None
+        
+        # Fallback to direct event attributes
+        if span_key is None:
+            node_id = ev.get("node_id")
+            iteration = ev.get("iteration")
+            span_key = node_id if node_id is not None else iteration
+            
         if span_key is None:
             continue
+            
         if span_key not in spans_data:
             spans_data[span_key] = {
                 "llm_s": 0.0,
@@ -259,7 +278,7 @@ def generate_graphs(run_folder):
 
     # Plot Graph 1
     fig, ax = plt.subplots(figsize=(11, 8.5))
-    plt.subplots_adjust(top=0.92, bottom=0.22)
+    plt.subplots_adjust(top=0.92, bottom=0.22, right=0.80)
     
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
@@ -291,7 +310,30 @@ def generate_graphs(run_folder):
         ax.plot(idx, step["cumulative_min"], marker='o', color=color, markersize=8, 
                 label=label, zorder=3, linestyle='None')
                 
-    # Horizontal threshold line removed as per user request
+    # Add 15 Min Threshold line
+    threshold_val = 15.0
+    ax.axhline(y=threshold_val, color='#E74C3C', linestyle='--', linewidth=1.5, alpha=0.8, label='15 Min Threshold', zorder=2)
+    
+    # Find the first step sequence that crosses the threshold
+    first_cross_idx = None
+    for idx, step in enumerate(steps):
+        if step["cumulative_min"] >= threshold_val:
+            first_cross_idx = idx
+            break
+            
+    if first_cross_idx is not None:
+        # Plot a red star marker at the crossing point
+        ax.plot(first_cross_idx, steps[first_cross_idx]["cumulative_min"], marker='*', color='#E74C3C', markersize=14, zorder=4, linestyle='None')
+        
+        # Add a curved annotation arrow pointing to the crossing point
+        ax.annotate(
+            "Threshold Crossed",
+            xy=(first_cross_idx, steps[first_cross_idx]["cumulative_min"]),
+            xytext=(first_cross_idx - 2 if first_cross_idx > 2 else first_cross_idx + 1, steps[first_cross_idx]["cumulative_min"] + 5),
+            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=-0.2", color='#E74C3C', linewidth=1.5),
+            fontsize=9.5, fontweight='bold', color='#E74C3C',
+            bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.9, edgecolor='#E74C3C')
+        )
 
     # Set titles and axes
     ax.set_title("End-to-End Execution Latency Accumulation", fontsize=13, weight='bold', pad=12, family='sans-serif')
@@ -305,22 +347,23 @@ def generate_graphs(run_folder):
     ax.spines['left'].set_color('#BDC3C7')
     ax.spines['bottom'].set_color('#BDC3C7')
     
-    # Legend
-    ax.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#BDC3C7', framealpha=0.9, fontsize=9.5)
+    # Legend placed outside the axis on the right
+    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), frameon=True, facecolor='white', edgecolor='#BDC3C7', framealpha=0.9, fontsize=9.5)
     
-    # Details section placed correctly (anchored relative to axes)
+    # Details section placed in the bottom-left of the figure to avoid any overlap with the plot
     details_text = (
         f"Details:\n"
-        f"  -   Use case: {dataset_name}\n"
-        f"  -   Dataset size: {dataset_size}"
+        f"  - Use case: {dataset_name}\n"
+        f"  - Dataset size: {dataset_size}"
     )
-    ax.text(0.01, 0.96, details_text, transform=ax.transAxes, fontsize=10, 
-            family='monospace', color='#2C3E50', verticalalignment='top',
-            bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.8, edgecolor='#BDC3C7'))
+    fig.text(0.06, 0.04, details_text, transform=fig.transFigure, fontsize=10, 
+             family='monospace', color='#2C3E50', horizontalalignment='left',
+             verticalalignment='bottom', zorder=5,
+             bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, edgecolor='#BDC3C7'))
 
     timeline_path = os.path.join(run_folder, "execution_timeline.png")
-    plt.savefig(timeline_path, dpi=150)
-    plt.close()
+    fig.savefig(timeline_path, dpi=150)
+    plt.close(fig)
     print(f"Saved timeline graph to {timeline_path}")
 
     # ─── GRAPH 2: Stacked Bar Latency Breakdown per Span ───
@@ -347,7 +390,7 @@ def generate_graphs(run_folder):
     shell_times = [s[1]["shell_s"] for s in sorted_spans]
     
     fig, ax = plt.subplots(figsize=(11, 8.5))
-    plt.subplots_adjust(top=0.92, bottom=0.25)
+    plt.subplots_adjust(top=0.92, bottom=0.25, right=0.80)
     
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
@@ -400,22 +443,23 @@ def generate_graphs(run_folder):
     ax.spines['left'].set_color('#BDC3C7')
     ax.spines['bottom'].set_color('#BDC3C7')
     
-    # Legend
-    ax.legend(loc='upper right', title="Total:", frameon=True, facecolor='white', edgecolor='#BDC3C7', fontsize=9)
+    # Legend placed outside the axis on the right
+    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), frameon=True, facecolor='white', edgecolor='#BDC3C7', fontsize=9.5)
     
-    # Details section placed correctly (anchored relative to axes)
+    # Details section placed in the bottom-left of the figure to avoid any overlap with the plot
     details_text = (
         f"Details:\n"
-        f"  -   Use case: {dataset_name}\n"
-        f"  -   Dataset size: {dataset_size}"
+        f"  - Use case: {dataset_name}\n"
+        f"  - Dataset size: {dataset_size}"
     )
-    ax.text(0.01, 0.96, details_text, transform=ax.transAxes, fontsize=10, 
-            family='monospace', color='#2C3E50', verticalalignment='top',
-            bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.8, edgecolor='#BDC3C7'))
+    fig.text(0.06, 0.04, details_text, transform=fig.transFigure, fontsize=10, 
+             family='monospace', color='#2C3E50', horizontalalignment='left',
+             verticalalignment='bottom', zorder=5,
+             bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, edgecolor='#BDC3C7'))
 
     breakdown_path = os.path.join(run_folder, "node_time_breakdown.png")
-    plt.savefig(breakdown_path, dpi=150)
-    plt.close()
+    fig.savefig(breakdown_path, dpi=150)
+    plt.close(fig)
     print(f"Saved breakdown graph to {breakdown_path}")
 
 if __name__ == "__main__":

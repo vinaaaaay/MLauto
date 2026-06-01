@@ -113,3 +113,28 @@ def get_requirements_contents(registry_path: str, tool_name: str) -> Tuple[str, 
             logger.warning(f"Failed to read tool requirements for {tool_name}: {e}")
             
     return common_content, tool_content
+
+
+def get_tool_prompt(registry_path: str, tool_name: str) -> str:
+    """Reads the tool-specific prompt template from tool.json in the registry."""
+    if not registry_path or not tool_name:
+        return ""
+    reg_path = Path(registry_path)
+    catalog_file = reg_path / "_common" / "catalog.json"
+    if catalog_file.exists():
+        try:
+            with open(catalog_file, "r") as f:
+                catalog = json.load(f)
+            tool_data = catalog.get("tools", {}).get(tool_name)
+            if tool_data and "path" in tool_data:
+                tool_json_file = reg_path / tool_data["path"] / "tool.json"
+                if tool_json_file.exists():
+                    with open(tool_json_file, "r") as f:
+                        tj = json.load(f)
+                    pt = tj.get("prompt_template", [])
+                    if isinstance(pt, list):
+                        return "\n".join(pt)
+                    return str(pt)
+        except Exception as e:
+            logger.warning(f"Failed to read tool prompt for {tool_name}: {e}")
+    return ""
