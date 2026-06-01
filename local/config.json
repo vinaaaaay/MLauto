@@ -5,7 +5,7 @@
     "max_tokens": 16384
   },
   "mcts": {
-    "max_iterations": 10,
+    "max_iterations": 20,
     "continuous_improvement": true,
     "initial_root_children": 2,
     "exploration_constant": 1.414,

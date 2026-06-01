@@ -258,23 +258,10 @@ def generate_graphs(run_folder):
         else:
             prev_end_time = None
 
-    # Fallback to default dummy values if no steps are present (e.g. stack didn't run)
+    # Print error and exit if no execution steps are present (e.g. stack didn't run)
     if len(steps) <= 1:
-        steps = [
-            {"agent": "Start", "cumulative_min": 0.0},
-            {"agent": "Perception Agent", "cumulative_min": 0.8},
-            {"agent": "Orchestrator", "cumulative_min": 0.9},
-            {"agent": "MCTS Handler", "cumulative_min": 0.91},
-            {"agent": "MCTS Handler", "cumulative_min": 0.92},
-            {"agent": "Orchestrator", "cumulative_min": 0.93},
-            {"agent": "Semantic Agent", "cumulative_min": 1.4},
-            {"agent": "Coder Agent", "cumulative_min": 6.8},
-            {"agent": "MCTS Handler", "cumulative_min": 6.81},
-            {"agent": "MCTS Handler", "cumulative_min": 6.82},
-            {"agent": "Orchestrator", "cumulative_min": 6.83},
-            {"agent": "Semantic Agent", "cumulative_min": 7.3},
-            {"agent": "Coder Agent", "cumulative_min": 22.3}
-        ]
+        print(f"Error: No execution steps found in orchestrator_telemetry.jsonl for run folder: {run_folder}")
+        return
 
     # Plot Graph 1
     fig, ax = plt.subplots(figsize=(11, 8.5))
@@ -310,31 +297,6 @@ def generate_graphs(run_folder):
         ax.plot(idx, step["cumulative_min"], marker='o', color=color, markersize=8, 
                 label=label, zorder=3, linestyle='None')
                 
-    # Add 15 Min Threshold line
-    threshold_val = 15.0
-    ax.axhline(y=threshold_val, color='#E74C3C', linestyle='--', linewidth=1.5, alpha=0.8, label='15 Min Threshold', zorder=2)
-    
-    # Find the first step sequence that crosses the threshold
-    first_cross_idx = None
-    for idx, step in enumerate(steps):
-        if step["cumulative_min"] >= threshold_val:
-            first_cross_idx = idx
-            break
-            
-    if first_cross_idx is not None:
-        # Plot a red star marker at the crossing point
-        ax.plot(first_cross_idx, steps[first_cross_idx]["cumulative_min"], marker='*', color='#E74C3C', markersize=14, zorder=4, linestyle='None')
-        
-        # Add a curved annotation arrow pointing to the crossing point
-        ax.annotate(
-            "Threshold Crossed",
-            xy=(first_cross_idx, steps[first_cross_idx]["cumulative_min"]),
-            xytext=(first_cross_idx - 2 if first_cross_idx > 2 else first_cross_idx + 1, steps[first_cross_idx]["cumulative_min"] + 5),
-            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=-0.2", color='#E74C3C', linewidth=1.5),
-            fontsize=9.5, fontweight='bold', color='#E74C3C',
-            bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.9, edgecolor='#E74C3C')
-        )
-
     # Set titles and axes
     ax.set_title("End-to-End Execution Latency Accumulation", fontsize=13, weight='bold', pad=12, family='sans-serif')
     ax.set_xlabel("Execution Step Sequence", fontsize=11, family='sans-serif')
@@ -370,83 +332,259 @@ def generate_graphs(run_folder):
     sorted_spans = parse_span_breakdown(run_folder)
     
     if not sorted_spans:
-        # Fallback dummy values to match the slide
-        sorted_spans = [
-            ("0", {"llm_s": 15.0, "write_s": 3.4, "shell_s": 305.3}),
-            ("1", {"llm_s": 18.0, "write_s": 5.7, "shell_s": 900.1})
-        ]
+        print(f"Warning: No span details found in coder_metrics.jsonl. Falling back to internal node state timing.")
 
-    # Create labels using the actual node ID from the span_key
-    labels = []
+    # Load MCTS node metadata if available
+    nodes = {}
+    tree_file = os.path.join(run_folder, "mcts_tree.json")
+    if os.path.exists(tree_file):
+        try:
+            with open(tree_file, "r", encoding="utf-8") as f:
+                tree_data = json.load(f)
+                nodes_raw = tree_data.get("nodes", {})
+                for k, v in nodes_raw.items():
+                    nodes[str(k)] = {
+                        "node_id": int(v.get("node_id", k)),
+                        "parent_id": v.get("parent_id"),
+                        "child_ids": list(v.get("child_ids", [])),
+                        "stage": v.get("stage", "evolve"),
+                        "validation_score": v.get("validation_score"),
+                        "execution_time": v.get("execution_time", 0.0),
+                        "ai_call_time": v.get("ai_call_time", 0.0)
+                    }
+        except Exception as e:
+            print(f"Error parsing mcts_tree.json: {e}")
+
+    # Ensure virtual root exists
+    if nodes and "-1" not in nodes:
+        children_of_root = []
+        for nid, ninfo in nodes.items():
+            if ninfo.get("parent_id") is None or ninfo.get("parent_id") == -1:
+                children_of_root.append(int(nid))
+                ninfo["parent_id"] = -1
+        
+        nodes["-1"] = {
+            "node_id": -1,
+            "parent_id": None,
+            "child_ids": children_of_root,
+            "stage": "root",
+            "validation_score": None,
+            "execution_time": 0.0,
+            "ai_call_time": 0.0
+        }
+
+    # Fallback to mcts_tree.txt if JSON parsing was not successful or returned empty
+    if not nodes:
+        tree_txt_path = os.path.join(run_folder, "mcts_tree.txt")
+        if os.path.exists(tree_txt_path):
+            try:
+                with open(tree_txt_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                
+                level_parents = {0: "-1"}
+                nodes["-1"] = {
+                    "node_id": -1,
+                    "parent_id": None,
+                    "child_ids": [],
+                    "stage": "root",
+                    "validation_score": None,
+                    "execution_time": 0.0,
+                    "ai_call_time": 0.0
+                }
+                
+                for line in lines:
+                    if not line.strip():
+                        continue
+                    m_node = re.search(r"(Node\s+(\d+))", line)
+                    if m_node:
+                        full_node_name, node_id = m_node.groups()
+                        pos = line.index(full_node_name)
+                        level = max(1, (pos // 4) - 1)
+                        
+                        stage = "evolve"
+                        validation_score = None
+                        m_brackets = re.search(r"\[([^\]]+)\]", line)
+                        if m_brackets:
+                            parts = m_brackets.group(1).split("|")
+                            if len(parts) >= 1:
+                                stage = parts[0].strip().lower()
+                            for part in parts:
+                                part = part.strip()
+                                if "score=" in part:
+                                    try:
+                                        validation_score = float(part.split("=")[1])
+                                    except Exception:
+                                        pass
+                                elif part.replace(".", "").replace("e-", "").replace("e+", "").replace("-", "").replace("+", "").replace("0", "").isdigit() or "score=" not in part and "." in part:
+                                    try:
+                                        validation_score = float(part)
+                                    except Exception:
+                                        pass
+                        
+                        parent_level = level - 1
+                        parent_id = level_parents.get(parent_level, "-1")
+                        
+                        nodes[str(node_id)] = {
+                            "node_id": int(node_id),
+                            "parent_id": int(parent_id) if parent_id != "-1" else -1,
+                            "child_ids": [],
+                            "stage": stage,
+                            "validation_score": validation_score,
+                            "execution_time": 0.0,
+                            "ai_call_time": 0.0
+                        }
+                        
+                        if str(parent_id) in nodes:
+                            if int(node_id) not in nodes[str(parent_id)]["child_ids"]:
+                                nodes[str(parent_id)]["child_ids"].append(int(node_id))
+                        
+                        level_parents[level] = str(node_id)
+            except Exception as e:
+                print(f"Error parsing mcts_tree.txt: {e}")
+
+    # Print error and exit if no tree structure could be parsed
+    if not nodes:
+        print(f"Error: No tree structure could be parsed from mcts_tree.json or mcts_tree.txt in: {run_folder}")
+        return
+
+    # Map times from coder_metrics spans
+    node_times = {}
     for s in sorted_spans:
-        key = s[0]
-        if str(key).startswith("Node"):
-            labels.append(str(key))
-        else:
-            labels.append(f"Node {key}")
-            
-    llm_times = [s[1]["llm_s"] for s in sorted_spans]
-    write_times = [s[1]["write_s"] for s in sorted_spans]
-    shell_times = [s[1]["shell_s"] for s in sorted_spans]
+        key_str = str(s[0]).replace("Node ", "")
+        node_times[key_str] = s[1]
+
+    # Symmetric horizontal division tree coordinate layout algorithm
+    x_coords = {}
+    y_coords = {}
     
-    fig, ax = plt.subplots(figsize=(11, 8.5))
-    plt.subplots_adjust(top=0.92, bottom=0.25, right=0.80)
+    def get_max_depth(node_key, depth=0):
+        node_info = nodes.get(str(node_key)) or {}
+        children = node_info.get("child_ids", [])
+        valid_children = [str(c) for c in children if str(c) in nodes]
+        if not valid_children:
+            return depth
+        return max(get_max_depth(c, depth + 1) for c in valid_children)
+        
+    def layout_tree(node_key, x_min=0.0, x_max=1.0, depth=0, depth_step=0.2):
+        x_coords[str(node_key)] = (x_min + x_max) / 2.0
+        y_coords[str(node_key)] = 1.0 - (depth * depth_step)
+        
+        node_info = nodes.get(str(node_key)) or {}
+        children = node_info.get("child_ids", [])
+        valid_children = [str(c) for c in children if str(c) in nodes]
+        if not valid_children:
+            return
+            
+        num_children = len(valid_children)
+        width = (x_max - x_min) / num_children
+        for idx, child in enumerate(valid_children):
+            c_min = x_min + idx * width
+            c_max = c_min + width
+            layout_tree(child, c_min, c_max, depth + 1, depth_step)
+            
+    # Calculate coords starting from Root (-1) with dynamic depth step scaling
+    max_d = get_max_depth("-1", 0)
+    depth_step = 0.8 / max(1, max_d)
+    layout_tree("-1", 0.05, 0.95, 0, depth_step)
+    
+    fig, ax = plt.subplots(figsize=(15.5, 11.0))
+    plt.subplots_adjust(top=0.91, bottom=0.18, left=0.04, right=0.96)
     
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
-
-    # Draw stacked bar chart
-    x = range(len(labels))
-    width = 0.4
+    ax.axis('off')
     
-    # Stack: LLM E2E (blue), File Write (pinkish gray), Shell Execute (red)
-    p1 = ax.bar(x, llm_times, width, label='LLM Calls E2E', color='#4285F4', edgecolor='black', linewidth=1)
-    p2 = ax.bar(x, write_times, width, bottom=llm_times, label='Tool Calls (File Write)', color='#E0D8D0', edgecolor='black', linewidth=1)
+    pretty_dataset = dataset_name.replace("-", " ").title()
+    ax.set_title("E2E Execution Latency Breakdown per Node", fontsize=14, weight='bold', pad=15, family='sans-serif', color='#2C3E50')
     
-    bottom_shell = [llm + write for llm, write in zip(llm_times, write_times)]
-    p3 = ax.bar(x, shell_times, width, bottom=bottom_shell, label='Tool Calls (Shell Execute)', color='#DB4437', edgecolor='black', linewidth=1)
-    
-    # Label durations inside segments and total durations above
-    for idx in range(len(labels)):
-        llm = llm_times[idx]
-        write = write_times[idx]
-        shell = shell_times[idx]
-        total = llm + write + shell
+    # 1. Draw connection edges and stage labels (E/D) at midpoints
+    for node_key, node_info in nodes.items():
+        if str(node_key) not in x_coords:
+            continue
+        children = node_info.get("child_ids", [])
+        p_x = x_coords[str(node_key)]
+        p_y = y_coords[str(node_key)]
         
-        # Display Total above each bar
-        ax.text(idx, total + max(5, total*0.015), f"Total:\n{total:.1f}s", 
-                ha='center', va='bottom', fontsize=9.5, fontweight='bold', color='#2C3E50')
+        for child in children:
+            c_key = str(child)
+            if c_key not in x_coords:
+                continue
+            c_x = x_coords[c_key]
+            c_y = y_coords[c_key]
+            
+            # Draw line connecting parent to child
+            ax.plot([p_x, c_x], [p_y, c_y], color='#CFD8DC', linestyle='-', linewidth=2.0, zorder=1)
+            
+            # Determine E/D stage for the child edge
+            child_info = nodes.get(c_key) or {}
+            stage_str = child_info.get("stage", "evolve")
+            stage_abbr = "E" if stage_str.lower() == "evolve" else ("D" if stage_str.lower() == "debug" else stage_str.upper())
+            
+            # Midpoint edge label inside a crisp white circle
+            mid_x = (p_x + c_x) / 2.0
+            mid_y = (p_y + c_y) / 2.0
+            ax.text(mid_x, mid_y, stage_abbr, ha='center', va='center', fontsize=9.5, fontweight='bold',
+                    color='#37474F', zorder=3,
+                    bbox=dict(boxstyle='circle,pad=0.25', facecolor='white', edgecolor='#B0BEC5', alpha=0.98, linewidth=1.2))
+                    
+    # 2. Draw node cards with styled color codes (Green for Success, Gray-Blue for Failure, Light-Gray for Root)
+    for node_key, node_info in nodes.items():
+        if str(node_key) not in x_coords:
+            continue
+        x = x_coords[str(node_key)]
+        y = y_coords[str(node_key)]
         
-        # Inside segments (if height > 5% of axis max to fit text)
-        y_max = max([l + w + s for l, w, s in zip(llm_times, write_times, shell_times)])
-        threshold_height = y_max * 0.05
+        nid = node_info.get("node_id", -1)
+        score_val = node_info.get("validation_score")
         
-        if shell > threshold_height:
-            ax.text(idx, llm + write + shell/2.0, f"{shell:.1f}s",
-                    ha='center', va='center', fontsize=8.5, color='white', fontweight='bold')
-        if write > threshold_height:
-            ax.text(idx, llm + write/2.0, f"{write:.1f}s",
-                    ha='center', va='center', fontsize=8.5, color='#2C3E50', fontweight='bold')
-        if llm > threshold_height:
-            ax.text(idx, llm/2.0, f"{llm:.1f}s",
-                    ha='center', va='center', fontsize=8.5, color='white', fontweight='bold')
-
-    ax.set_ylabel('Duration (Seconds)', fontsize=11, family='sans-serif')
-    ax.set_title('E2E Execution Latency Breakdown per Node', fontsize=13, weight='bold', pad=12, family='sans-serif')
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=10, family='sans-serif')
-    ax.set_xlabel('Execution Nodes', fontsize=11, family='sans-serif')
+        if nid == -1:
+            node_title = "MCTS Root"
+            score_str = "Status: Root"
+            time_str = "Orchestrator Init"
+            card_face = '#F5F5F5'
+            card_edge = '#9E9E9E'
+        else:
+            node_title = f"Node {nid}"
+            score_str = f"Score: {score_val:.4f}" if isinstance(score_val, (int, float)) else "No Score"
+            
+            # Retrieve time stats for this node
+            times = node_times.get(str(nid), {"llm_s": 0.0, "write_s": 0.0, "shell_s": 0.0})
+            llm_s = times.get("llm_s", 0.0) or node_info.get("ai_call_time", 0.0) or 0.0
+            shell_s = times.get("shell_s", 0.0) or node_info.get("execution_time", 0.0) or 0.0
+            write_s = times.get("write_s", 0.0) or 0.0
+            
+            # Show original detailed latency breakdown matching user request
+            time_str = (
+                f"LLM Calls Time: {llm_s:.1f}s\n"
+                f"Tool Call (File Write): {write_s:.1f}s\n"
+                f"Tool Call (Shell Execute): {shell_s:.1f}s"
+            )
+            
+            if isinstance(score_val, (int, float)):
+                card_face = '#E8F5E9'  # Premium Light-Green for successful models
+                card_edge = '#2ECC71'  # Green Border
+            else:
+                card_face = '#ECEFF1'  # Premium Gray-Blue for unsuccessful iterations
+                card_edge = '#90A4AE'  # Dark Gray-Blue Border
+                
+        node_text = f"{node_title}\n{score_str}\n{time_str}"
+        
+        # Display the formatted card
+        ax.text(x, y, node_text, ha='center', va='center', fontsize=9.0, fontweight='semibold',
+                family='sans-serif', color='#2C3E50', zorder=2,
+                bbox=dict(boxstyle='round,pad=0.65', facecolor=card_face, edgecolor=card_edge, alpha=0.98, linewidth=1.5))
+                
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.1)
     
-    ax.grid(True, linestyle=':', alpha=0.5, color='#BDC3C7')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_color('#BDC3C7')
-    ax.spines['bottom'].set_color('#BDC3C7')
+    # Legend for Tree Nodes (Green for Successful Model, Gray for Unsuccessful Model)
+    import matplotlib.patches as mpatches
+    green_patch = mpatches.Patch(facecolor='#E8F5E9', edgecolor='#2ECC71', label='Model Trained (Score)')
+    gray_patch = mpatches.Patch(facecolor='#ECEFF1', edgecolor='#90A4AE', label='Iteration Failed (No Score)')
+    root_patch = mpatches.Patch(facecolor='#F5F5F5', edgecolor='#9E9E9E', label='MCTS Root')
+    ax.legend(handles=[green_patch, gray_patch, root_patch], loc='upper right', frameon=True, facecolor='white', edgecolor='#BDC3C7', fontsize=9.5)
     
-    # Legend placed outside the axis on the right
-    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), frameon=True, facecolor='white', edgecolor='#BDC3C7', fontsize=9.5)
-    
-    # Details section placed in the bottom-left of the figure to avoid any overlap with the plot
+    # Details section placed cleanly in the bottom-left of the canvas
     details_text = (
         f"Details:\n"
         f"  - Use case: {dataset_name}\n"

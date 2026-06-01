@@ -25,7 +25,7 @@ echo "===================================================="
 echo "3. Starting benchmark run on tabular dataset..."
 echo "===================================================="
 cd ..
-python local/run_benchmark.py --datasets tabular-playground-series-may-2022 --config-file local/config.json --max-iterations 10 --user-prompt "$USER_PROMPT"
+python local/run_benchmark.py --datasets denoising-dirty-documents --config-file local/config.json --max-iterations 20 --user-prompt "$USER_PROMPT"
 
 echo ""
 echo "===================================================="

@@ -26,7 +26,7 @@ def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 
     print(f"Starting run for {dataset_name} (run_id: {run_id})")
     
     try:
-        response = httpx.post(f"{ORCHESTRATOR_URL}/run", json=payload, timeout=18000.0) # 5 hour timeout
+        response = httpx.post(f"{ORCHESTRATOR_URL}/run", json=payload, timeout=14400.0) # 4 hour timeout
         response.raise_for_status()
         report = response.json()
         status = report.get('status')
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", type=str, help="Comma separated list of dataset names")
     parser.add_argument("--mle-bench-path", type=str, default="/home/administrator/dreamlab/mle-bench-lite", help="Path to mle-bench-lite datasets")
-    parser.add_argument("--max-iterations", type=int, default=3, help="Max MCTS iterations")
+    parser.add_argument("--max-iterations", type=int, default=10, help="Max MCTS iterations")
     parser.add_argument("--config-file", type=str, help="Path to a JSON configuration file (e.g., config.example.json)")
     parser.add_argument("--user-prompt", type=str, default="", help="Optional user prompt / instruction")
     args = parser.parse_args()
