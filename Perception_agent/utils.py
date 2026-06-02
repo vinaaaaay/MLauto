@@ -229,8 +229,8 @@ import os, json
 folder = {repr(folder_path)}
 res = []
 if os.path.exists(folder):
-    for root, _, files in os.walk(folder):
-        for file in files:
+    for root, dirs, files in os.walk(folder):
+        for file in files[:50]:
             abs_path = os.path.join(root, file)
             rel_path = os.path.relpath(abs_path, folder)
             try:
