@@ -453,147 +453,138 @@ def generate_graphs(run_folder):
         key_str = str(s[0]).replace("Node ", "")
         node_times[key_str] = s[1]
 
-    # Symmetric horizontal division tree coordinate layout algorithm
-    x_coords = {}
-    y_coords = {}
-    
-    def get_max_depth(node_key, depth=0):
-        node_info = nodes.get(str(node_key)) or {}
-        children = node_info.get("child_ids", [])
-        valid_children = [str(c) for c in children if str(c) in nodes]
-        if not valid_children:
-            return depth
-        return max(get_max_depth(c, depth + 1) for c in valid_children)
-        
-    def layout_tree(node_key, x_min=0.0, x_max=1.0, depth=0, depth_step=0.2):
-        x_coords[str(node_key)] = (x_min + x_max) / 2.0
-        y_coords[str(node_key)] = 1.0 - (depth * depth_step)
-        
-        node_info = nodes.get(str(node_key)) or {}
-        children = node_info.get("child_ids", [])
-        valid_children = [str(c) for c in children if str(c) in nodes]
-        if not valid_children:
-            return
+    # Filter and collect actual nodes (node_id >= 0) sorted by node_id ascending
+    actual_nodes = []
+    for nid, node_info in nodes.items():
+        if int(node_info.get("node_id", -1)) >= 0:
+            actual_nodes.append(node_info)
             
-        num_children = len(valid_children)
-        width = (x_max - x_min) / num_children
-        for idx, child in enumerate(valid_children):
-            c_min = x_min + idx * width
-            c_max = c_min + width
-            layout_tree(child, c_min, c_max, depth + 1, depth_step)
-            
-    # Calculate coords starting from Root (-1) with dynamic depth step scaling
-    max_d = get_max_depth("-1", 0)
-    depth_step = 0.8 / max(1, max_d)
-    layout_tree("-1", 0.05, 0.95, 0, depth_step)
-    
-    fig, ax = plt.subplots(figsize=(15.5, 11.0))
-    plt.subplots_adjust(top=0.91, bottom=0.18, left=0.04, right=0.96)
+    actual_nodes.sort(key=lambda x: x.get("node_id", 0))
+
+    if not actual_nodes:
+        print("Warning: No actual nodes found for plotting breakdown.")
+        return
+
+    node_ids = []
+    llm_times = []
+    write_times = []
+    shell_times = []
+    scores = []
+
+    for n in actual_nodes:
+        nid = n["node_id"]
+        times = node_times.get(str(nid), {"llm_s": 0.0, "write_s": 0.0, "shell_s": 0.0})
+        llm_s = times.get("llm_s", 0.0) or n.get("ai_call_time", 0.0) or 0.0
+        shell_s = times.get("shell_s", 0.0) or n.get("execution_time", 0.0) or 0.0
+        write_s = times.get("write_s", 0.0) or 0.0
+        
+        node_ids.append(f"Node {nid}")
+        llm_times.append(llm_s)
+        write_times.append(write_s)
+        shell_times.append(shell_s)
+        
+        score_val = n.get("validation_score")
+        if isinstance(score_val, (int, float)):
+            scores.append(f"{score_val:.4f}")
+        else:
+            scores.append("N/A")
+
+    # Set up figures and axes
+    fig, ax = plt.subplots(figsize=(15.5, 9.0))
+    # Leave 38% height at the bottom for the data table
+    plt.subplots_adjust(top=0.91, bottom=0.38, left=0.08, right=0.96)
     
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
-    ax.axis('off')
+
+    # Draw stacked bar chart (excluding File Write)
+    x_pos = np.arange(len(actual_nodes))
+    bar_width = 0.55
     
-    pretty_dataset = dataset_name.replace("-", " ").title()
-    ax.set_title("E2E Execution Latency Breakdown per Node", fontsize=14, weight='bold', pad=15, family='sans-serif', color='#2C3E50')
+    p1 = ax.bar(x_pos, llm_times, bar_width, label='LLM Generation', color='#E74C3C', edgecolor='none')
+    p2 = ax.bar(x_pos, shell_times, bar_width, bottom=llm_times, label='Shell Execution', color='#3498DB', edgecolor='none')
+
+    ax.set_ylabel("Duration (Seconds)", fontsize=11, fontweight='bold', family='sans-serif', color='#2C3E50')
+    ax.set_title("E2E Execution Latency Breakdown and Score per Node", fontsize=14, weight='bold', pad=20, family='sans-serif', color='#2C3E50')
     
-    # 1. Draw connection edges and stage labels (E/D) at midpoints
-    for node_key, node_info in nodes.items():
-        if str(node_key) not in x_coords:
-            continue
-        children = node_info.get("child_ids", [])
-        p_x = x_coords[str(node_key)]
-        p_y = y_coords[str(node_key)]
-        
-        for child in children:
-            c_key = str(child)
-            if c_key not in x_coords:
-                continue
-            c_x = x_coords[c_key]
-            c_y = y_coords[c_key]
-            
-            # Draw line connecting parent to child
-            ax.plot([p_x, c_x], [p_y, c_y], color='#CFD8DC', linestyle='-', linewidth=2.0, zorder=1)
-            
-            # Determine E/D stage for the child edge
-            child_info = nodes.get(c_key) or {}
-            stage_str = child_info.get("stage", "evolve")
-            stage_abbr = "E" if stage_str.lower() == "evolve" else ("D" if stage_str.lower() == "debug" else stage_str.upper())
-            
-            # Midpoint edge label inside a crisp white circle
-            mid_x = (p_x + c_x) / 2.0
-            mid_y = (p_y + c_y) / 2.0
-            ax.text(mid_x, mid_y, stage_abbr, ha='center', va='center', fontsize=9.5, fontweight='bold',
-                    color='#37474F', zorder=3,
-                    bbox=dict(boxstyle='circle,pad=0.25', facecolor='white', edgecolor='#B0BEC5', alpha=0.98, linewidth=1.2))
-                    
-    # 2. Draw node cards with styled color codes (Green for Success, Gray-Blue for Failure, Light-Gray for Root)
-    for node_key, node_info in nodes.items():
-        if str(node_key) not in x_coords:
-            continue
-        x = x_coords[str(node_key)]
-        y = y_coords[str(node_key)]
-        
-        nid = node_info.get("node_id", -1)
-        score_val = node_info.get("validation_score")
-        
-        if nid == -1:
-            node_title = "MCTS Root"
-            score_str = "Status: Root"
-            time_str = "Orchestrator Init"
-            card_face = '#F5F5F5'
-            card_edge = '#9E9E9E'
-        else:
-            node_title = f"Node {nid}"
-            score_str = f"Score: {score_val:.4f}" if isinstance(score_val, (int, float)) else "No Score"
-            
-            # Retrieve time stats for this node
-            times = node_times.get(str(nid), {"llm_s": 0.0, "write_s": 0.0, "shell_s": 0.0})
-            llm_s = times.get("llm_s", 0.0) or node_info.get("ai_call_time", 0.0) or 0.0
-            shell_s = times.get("shell_s", 0.0) or node_info.get("execution_time", 0.0) or 0.0
-            write_s = times.get("write_s", 0.0) or 0.0
-            
-            # Show original detailed latency breakdown matching user request
-            time_str = (
-                f"LLM Calls Time: {llm_s:.1f}s\n"
-                f"Tool Call (File Write): {write_s:.1f}s\n"
-                f"Tool Call (Shell Execute): {shell_s:.1f}s"
-            )
-            
-            if isinstance(score_val, (int, float)):
-                card_face = '#E8F5E9'  # Premium Light-Green for successful models
-                card_edge = '#2ECC71'  # Green Border
-            else:
-                card_face = '#ECEFF1'  # Premium Gray-Blue for unsuccessful iterations
-                card_edge = '#90A4AE'  # Dark Gray-Blue Border
-                
-        node_text = f"{node_title}\n{score_str}\n{time_str}"
-        
-        # Display the formatted card
-        ax.text(x, y, node_text, ha='center', va='center', fontsize=9.0, fontweight='semibold',
-                family='sans-serif', color='#2C3E50', zorder=2,
-                bbox=dict(boxstyle='round,pad=0.65', facecolor=card_face, edgecolor=card_edge, alpha=0.98, linewidth=1.5))
-                
-    ax.set_xlim(-0.05, 1.05)
-    ax.set_ylim(-0.05, 1.1)
+    # Configure axes ticks and exact x-limits for perfect alignment
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels([])
+    ax.set_xlim(-0.5, len(actual_nodes) - 0.5)
+    ax.grid(axis='y', linestyle=':', alpha=0.5, color='#BDC3C7')
     
-    # Legend for Tree Nodes (Green for Successful Model, Gray for Unsuccessful Model)
-    import matplotlib.patches as mpatches
-    green_patch = mpatches.Patch(facecolor='#E8F5E9', edgecolor='#2ECC71', label='Model Trained (Score)')
-    gray_patch = mpatches.Patch(facecolor='#ECEFF1', edgecolor='#90A4AE', label='Iteration Failed (No Score)')
-    root_patch = mpatches.Patch(facecolor='#F5F5F5', edgecolor='#9E9E9E', label='MCTS Root')
-    ax.legend(handles=[green_patch, gray_patch, root_patch], loc='upper right', frameon=True, facecolor='white', edgecolor='#BDC3C7', fontsize=9.5)
+    # Hide top/right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#BDC3C7')
+    ax.spines['bottom'].set_color('#BDC3C7')
     
-    # Details section placed cleanly in the bottom-left of the canvas
+    # Legend
+    ax.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='#BDC3C7')
+
+    # Place dataset details on the bottom-left of the figure
     details_text = (
         f"Details:\n"
         f"  - Use case: {dataset_name}\n"
         f"  - Dataset size: {dataset_size}"
     )
-    fig.text(0.06, 0.04, details_text, transform=fig.transFigure, fontsize=10, 
+    fig.text(0.08, 0.04, details_text, transform=fig.transFigure, fontsize=10, 
              family='monospace', color='#2C3E50', horizontalalignment='left',
              verticalalignment='bottom', zorder=5,
-             bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, edgecolor='#BDC3C7'))
+             bbox=dict(boxstyle='round,pad=0.5', facecolor='#F5F5F5', alpha=0.9, edgecolor='#BDC3C7', linewidth=1))
+
+    # Grid table content (excluding File Write)
+    cell_text = [
+        scores,
+        [f"{t:.1f}s" for t in llm_times],
+        [f"{t:.1f}s" for t in shell_times],
+        [f"{l+s:.1f}s" for l, s in zip(llm_times, shell_times)]
+    ]
+    row_headers = [
+        'Validation Score',
+        'LLM Generation',
+        'Shell Execution',
+        'Total Duration'
+    ]
+    col_headers = node_ids
+
+    # Create table with custom bbox for perfect alignment
+    table = ax.table(
+        cellText=cell_text,
+        rowLabels=row_headers,
+        colLabels=col_headers,
+        loc='bottom',
+        cellLoc='center',
+        bbox=[0.0, -0.5, 1.0, 0.4]
+    )
+    
+    # Style the table
+    table.auto_set_font_size(False)
+    table.set_fontsize(8.5)
+    
+    # Customize cell colors
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor('#BDC3C7')
+        if row == 0:
+            # Column headers (colLabels)
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#2C3E50')
+        elif col == -1:
+            # Row labels (rowLabels)
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#34495E')
+        else:
+            # Data cells
+            if row == 1:
+                # Validation score row
+                val = cell_text[0][col]
+                if val != "N/A":
+                    cell.set_facecolor('#E8F5E9')
+                    cell.set_text_props(weight='bold', color='#27AE60')
+                else:
+                    cell.set_facecolor('#FFFFFF')
+            else:
+                cell.set_facecolor('#FFFFFF')
 
     breakdown_path = os.path.join(run_folder, "node_time_breakdown.png")
     fig.savefig(breakdown_path, dpi=150)

@@ -110,6 +110,8 @@ services:
     build:
       context: ..
       dockerfile: local/SandboxDockerfile
+    image: agent-sandbox-custom:latest
+    restart: unless-stopped
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -117,3 +119,11 @@ services:
       - seccomp:unconfined
     volumes:
       - ${MLE_BENCH_PATH:-/home/administrator/dreamlab/mle-bench-lite}:/home/gem/workspace/data:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 8G
