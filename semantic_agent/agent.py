@@ -31,12 +31,16 @@ def build_semantic_agent_graph():
         temperature = llm_config.get("temperature", 0.1)
         max_tokens = llm_config.get("max_tokens", 16384)
 
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "OPENAI_API_KEY environment variable is not set. "
-                "Export it before running: export OPENAI_API_KEY=sk-..."
+                "Neither OPENROUTER_API_KEY nor OPENAI_API_KEY environment variable is set."
             )
+
+        api_base = os.environ.get("OPENAI_API_BASE") or os.environ.get("OPENAI_BASE_URL")
+        if not api_base:
+            if os.environ.get("OPENROUTER_API_KEY") or api_key.startswith("sk-or-"):
+                api_base = "https://openrouter.ai/api/v1"
 
         is_reasoning_model = any(x in model.lower() for x in ["o1-", "o3-", "gpt-5"])
 
@@ -47,14 +51,16 @@ def build_semantic_agent_graph():
                 temperature=1,
                 max_completion_tokens=max_tokens,
                 api_key=api_key,
+                openai_api_base=api_base,
             )
         
-        logger.info(f"Initialized OpenAI LLM: model={model}, temp={temperature}")
+        logger.info(f"Initialized OpenAI LLM: model={model}, temp={temperature}, base_url={api_base}")
         return ChatOpenAI(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
             api_key=api_key,
+            openai_api_base=api_base,
         )
 
     def generate_query(state: SemanticAgentState) -> dict:

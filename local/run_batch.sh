@@ -18,14 +18,27 @@ echo "2. Checking container status..."
 echo "===================================================="
 docker compose ps
 
-USER_PROMPT="${1:-}"
+USER_PROMPT="${1:-Solve this ML problem with an appropiate choice of Deep Learning Model}"
 
 echo ""
 echo "===================================================="
-echo "3. Starting benchmark run on tabular dataset..."
+echo "3. Starting 5 batch runs for each dataset..."
 echo "===================================================="
 cd ..
-python local/run_benchmark.py --datasets tabular-playground-series-may-2022 --config-file local/config.json --max-iterations 5 --user-prompt "$USER_PROMPT"
+
+DATASETS="tabular-playground-series-may-2022,dog-breed-identification,mlsp-2013-birds"
+
+for run in {1..5}; do
+  echo ""
+  echo "----------------------------------------------------"
+  echo "Starting Run Batch $run of 5..."
+  echo "----------------------------------------------------"
+  python local/run_benchmark.py \
+    --datasets "$DATASETS" \
+    --config-file local/config.json \
+    --max-iterations 40 \
+    --user-prompt "$USER_PROMPT"
+done
 
 echo ""
 echo "===================================================="
