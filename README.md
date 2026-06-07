@@ -40,7 +40,7 @@ graph TD
 
 ---
 
-## ⚡ Key Features & Refactoring Highlights
+## Key Features & Refactoring Highlights
 
 * **FastAPI Runtimes**: Purged all legacy cloud-specific wrappers, bastions, and cloud MCP packages. All agent servers are now pure, highly efficient FastAPI microservice runtimes.
 * **Singleton LangGraphs**: Graphs are compiled exactly once at container startup, eliminating per-request graph recompilation lag and accelerating step performance.
