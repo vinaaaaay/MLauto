@@ -6,7 +6,7 @@ Initially derived from a complex cloud-based lambda setup, the repository has be
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 The platform is designed around strictly isolated microservices communicating synchronously via HTTP REST (`POST /invoke`). There are no cross-imports or direct package dependencies between agent directories.
 
@@ -50,7 +50,7 @@ graph TD
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 MLauto/
@@ -71,7 +71,7 @@ MLauto/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 * Docker & Docker Compose
@@ -100,7 +100,7 @@ docker compose down
 
 ---
 
-## 📊 Telemetry and Visualizations
+## Telemetry and Visualizations
 
 At the end of a benchmark run, the platform parses `orchestrator_telemetry.jsonl` and `coder_metrics.jsonl` to output high-fidelity graphs inside the run folder:
 
