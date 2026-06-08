@@ -9,7 +9,7 @@ from datetime import datetime
 
 ORCHESTRATOR_URL = "http://localhost:8000"
 
-def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 3, config: dict = None, user_prompt: str = ""):
+def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 3, config: dict = None, user_prompt: str = "", max_runtime_seconds: int = 14400):
     run_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{dataset_name}"
     
     # We mount mle_bench_path to /home/gem/workspace/data in sandbox
@@ -20,13 +20,16 @@ def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 
         "input_data_folder": input_data_folder,
         "user_input": user_prompt,
         "config": config or {},
-        "max_iterations": max_iterations
+        "max_iterations": max_iterations,
+        "max_runtime_seconds": max_runtime_seconds
     }
     
-    print(f"Starting run for {dataset_name} (run_id: {run_id})")
+    print(f"Starting run for {dataset_name} (run_id: {run_id}, timeout: {max_runtime_seconds}s)")
     
+    # httpx timeout = server timeout + 5 min grace period for finalization
+    client_timeout = max_runtime_seconds + 300
     try:
-        response = httpx.post(f"{ORCHESTRATOR_URL}/run", json=payload, timeout=14400.0) # 4 hour timeout
+        response = httpx.post(f"{ORCHESTRATOR_URL}/run", json=payload, timeout=client_timeout)
         response.raise_for_status()
         report = response.json()
         status = report.get('status')
@@ -50,8 +53,9 @@ def run_benchmark(dataset_name: str, mle_bench_path: str, max_iterations: int = 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", type=str, help="Comma separated list of dataset names")
-    parser.add_argument("--mle-bench-path", type=str, default="/home/administrator/dreamlab/mle-bench-lite", help="Path to mle-bench-lite datasets")
+    parser.add_argument("--mle-bench-path", type=str, default="/home/ubuntu/mle-bench-lite", help="Path to mle-bench-lite datasets")
     parser.add_argument("--max-iterations", type=int, default=10, help="Max MCTS iterations")
+    parser.add_argument("--max-runtime-seconds", type=int, default=14400, help="Max runtime in seconds per dataset (default: 14400 = 4 hours)")
     parser.add_argument("--config-file", type=str, help="Path to a JSON configuration file (e.g., config.example.json)")
     parser.add_argument("--user-prompt", type=str, default="", help="Optional user prompt / instruction")
     args = parser.parse_args()
@@ -71,4 +75,4 @@ if __name__ == "__main__":
             exit(1)
             
     for ds in datasets:
-        run_benchmark(ds.strip(), args.mle_bench_path, args.max_iterations, config, args.user_prompt)
+        run_benchmark(ds.strip(), args.mle_bench_path, args.max_iterations, config, args.user_prompt, args.max_runtime_seconds)

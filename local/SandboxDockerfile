@@ -5,6 +5,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/
 RUN mkdir -p /home/gem/workspace && chown -R 1000:1000 /home/gem
 RUN /usr/local/bin/uv venv /home/gem/workspace/.venv
 COPY ./tools_registry/_common/requirements.txt /tmp/reqs.txt
-RUN . /home/gem/workspace/.venv/bin/activate && uv pip install -r /tmp/reqs.txt
+RUN . /home/gem/workspace/.venv/bin/activate && uv pip install --index-strategy unsafe-best-match -r /tmp/reqs.txt
 RUN chown -R 1000:1000 /home/gem
 ENTRYPOINT ["sh", "-c", "chown -R 1000:1000 /home/gem || true; exec /opt/gem/run.sh"]

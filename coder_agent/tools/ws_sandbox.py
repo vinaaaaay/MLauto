@@ -100,7 +100,7 @@ class AgentInfraWSSandbox(BaseSandboxClient):
         try:
             async def run_ws():
                 nonlocal exit_code, accumulated_output
-                async with websockets.connect(self.ws_url, ping_interval=None, ping_timeout=None) as ws:
+                async with websockets.connect(self.ws_url, ping_interval=20, ping_timeout=20) as ws:
                     async for msg in ws:
                         obj = json.loads(msg)
                         msg_type = obj.get("type")

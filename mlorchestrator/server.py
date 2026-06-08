@@ -15,6 +15,7 @@ class RunRequest(BaseModel):
     user_input: str = ""
     config: Dict[str, Any] = {}
     max_iterations: int = 3
+    max_runtime_seconds: int = 14400  # 4 hours
 
 @app.post("/run")
 def run_endpoint(req: RunRequest):
@@ -24,7 +25,8 @@ def run_endpoint(req: RunRequest):
             input_data_folder=req.input_data_folder,
             user_input=req.user_input,
             config=req.config,
-            max_iterations=req.max_iterations
+            max_iterations=req.max_iterations,
+            max_runtime_seconds=req.max_runtime_seconds
         )
         return report
     except Exception as e:

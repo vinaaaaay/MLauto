@@ -67,7 +67,10 @@ services:
     volumes:
       - ../runs:/runs
       - ../tools_registry:/tools_registry:ro
+      - hf_cache:/app/hf_home
     command: uvicorn a2a_server:app --host 0.0.0.0 --port 8088
+    depends_on:
+      - mcp-server
 
   mcp-server:
     build:
@@ -84,6 +87,7 @@ services:
     volumes:
       - ../runs:/runs
       - ../tools_registry:/tools_registry:ro
+      - hf_cache:/app/hf_home
     command: python mcp_server.py
 
   coder-agent:
@@ -118,7 +122,13 @@ services:
     security_opt:
       - seccomp:unconfined
     volumes:
-      - ${MLE_BENCH_PATH:-/home/administrator/dreamlab/mle-bench-lite}:/home/gem/workspace/data:ro
+      - ${MLE_BENCH_PATH:-/home/ubuntu/mle-bench-lite}:/home/gem/workspace/data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:8080/"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 2s
     deploy:
       resources:
         limits:
@@ -127,3 +137,6 @@ services:
         reservations:
           cpus: '2.0'
           memory: 8G
+
+volumes:
+  hf_cache:

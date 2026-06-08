@@ -151,15 +151,15 @@ def build_environment_prompt(
 
     if common_req_file and tool_req_file:
         env_prompt += (
-            f"  uv pip install --prerelease=allow -r \"{tool_req_file}\" -r \"{common_req_file}\"\n"
+            f"  uv pip install --prerelease=allow --index-strategy unsafe-best-match -r \"{tool_req_file}\" -r \"{common_req_file}\"\n"
         )
     elif common_req_file:
         env_prompt += (
-            f"  uv pip install --prerelease=allow -r \"{common_req_file}\"\n"
+            f"  uv pip install --prerelease=allow --index-strategy unsafe-best-match -r \"{common_req_file}\"\n"
         )
     elif tool_req_file:
         env_prompt += (
-            f"  uv pip install --prerelease=allow -r \"{tool_req_file}\"\n"
+            f"  uv pip install --prerelease=allow --index-strategy unsafe-best-match -r \"{tool_req_file}\"\n"
         )
     else:
         env_prompt += "  # Install packages here if needed, e.g., uv pip install pandas scikit-learn\n"

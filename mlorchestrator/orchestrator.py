@@ -7,6 +7,10 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+class OrchestratorTimeoutError(Exception):
+    """Raised when the orchestration run exceeds the maximum allowed runtime."""
+    pass
+
 def invoke_agent(url: str, payload: dict) -> dict:
     """
     Synchronously invokes an agent HTTP endpoint and parses the response.
@@ -30,7 +34,7 @@ def invoke_agent(url: str, payload: dict) -> dict:
         logger.error(f"Failed to invoke agent at {url}: {e}")
         raise e
 
-def run_orchestration(run_id: str, input_data_folder: str, user_input: str, config: dict, max_iterations: int) -> dict:
+def run_orchestration(run_id: str, input_data_folder: str, user_input: str, config: dict, max_iterations: int, max_runtime_seconds: int = 14400) -> dict:
     """
     Executes the MCTS Orchestration loop sequentially using synchronous HTTP invokes.
     Captures telemetry and writes a run report to local disk.
@@ -49,6 +53,8 @@ def run_orchestration(run_id: str, input_data_folder: str, user_input: str, conf
     os.makedirs(run_folder, exist_ok=True)
     
     telemetry_file = os.path.join(run_folder, "orchestrator_telemetry.jsonl")
+    
+    final_outcome = None
     
     # Telemetry logging setup
     telemetry_logs = []
@@ -133,7 +139,14 @@ def run_orchestration(run_id: str, input_data_folder: str, user_input: str, conf
         final_outcome = None
         
         while iteration < max_iterations:
-            logger.info(f"--- MCTS Iteration {iteration} ---")
+            # Enforce strict runtime limit
+            elapsed = time.time() - start_time
+            if elapsed > max_runtime_seconds:
+                raise OrchestratorTimeoutError(
+                    f"Run exceeded maximum runtime of {max_runtime_seconds}s "
+                    f"(elapsed: {elapsed:.1f}s) at iteration {iteration}/{max_iterations}"
+                )
+            logger.info(f"--- MCTS Iteration {iteration} (elapsed: {elapsed:.0f}s / {max_runtime_seconds}s) ---")
             
             # Step 3: SelectNode
             select_payload = {
@@ -222,6 +235,22 @@ def run_orchestration(run_id: str, input_data_folder: str, user_input: str, conf
         
         status = "SUCCESS"
         error_msg = None
+
+    except OrchestratorTimeoutError as e:
+        logger.warning(f"Orchestration timed out: {e}")
+        status = "TIMEOUT"
+        error_msg = str(e)
+        # Best-effort finalization to capture the best result found so far
+        try:
+            logger.info("Attempting best-effort finalization after timeout...")
+            finalize_payload = {
+                "action": "finalize",
+                "mcts_tree": mcts_tree
+            }
+            final_outcome = log_call(mcts_url, "finalize", finalize_payload)
+            logger.info("Best-effort finalization succeeded.")
+        except Exception as finalize_err:
+            logger.error(f"Best-effort finalization failed: {finalize_err}")
 
     except Exception as e:
         logger.exception("Orchestration failed with unexpected exception")

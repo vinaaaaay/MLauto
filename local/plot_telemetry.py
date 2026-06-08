@@ -36,7 +36,7 @@ def get_dataset_details(run_folder):
     # Calculate dataset size on host (defaulting to 0.57 GB fallback if not found)
     dataset_size_gb = 0.57
     try:
-        host_data_path = f"/home/administrator/dreamlab/mle-bench-lite/{dataset_name}/public"
+        host_data_path = f"/home/ubuntu/mle-bench-lite/{dataset_name}/public"
         if os.path.exists(host_data_path):
             total_bytes = 0
             for root, dirs, files in os.walk(host_data_path):
@@ -69,7 +69,13 @@ def parse_orchestrator_steps(run_folder):
                 try:
                     d = json.loads(line)
                     if "call_index" in d and "target" in d:
-                        events.append(d)
+                        events.append({
+                            "call_index": d["call_index"],
+                            "target": d["target"],
+                            "start_time": d.get("start_time"),
+                            "duration_seconds": d.get("duration_seconds", 0.0),
+                            "action": d.get("action", "")
+                        })
                 except Exception:
                     pass
     
@@ -83,6 +89,7 @@ def parse_span_breakdown(run_folder):
     """
     events = []
     log_file = os.path.join(run_folder, "coder_metrics.jsonl")
+    run_id = os.path.basename(os.path.normpath(run_folder))
     if os.path.exists(log_file):
         with open(log_file, "r", encoding="utf-8") as f:
             for line in f:
@@ -91,7 +98,19 @@ def parse_span_breakdown(run_folder):
                     continue
                 try:
                     d = json.loads(line)
-                    events.append(d)
+                    if d.get("context_id") and d.get("context_id") != run_id:
+                        continue
+                    events.append({
+                        "span_id": d.get("span_id"),
+                        "node_id": d.get("node_id"),
+                        "iteration": d.get("iteration"),
+                        "timestamp": d.get("timestamp"),
+                        "event_type": d.get("event_type"),
+                        "latency_ms": d.get("latency_ms", 0),
+                        "tool_name": d.get("tool_name", ""),
+                        "agent_id": d.get("agent_id", "unknown"),
+                        "node_name": d.get("node_name", "unknown")
+                    })
                 except Exception:
                     pass
     
@@ -172,6 +191,8 @@ def parse_span_breakdown(run_folder):
                 for line in f:
                     try:
                         d = json.loads(line)
+                        if d.get("context_id") and d.get("context_id") != run_id:
+                            continue
                         fallback_events.append(d)
                     except Exception:
                         pass
@@ -489,10 +510,15 @@ def generate_graphs(run_folder):
         else:
             scores.append("N/A")
 
-    # Set up figures and axes
-    fig, ax = plt.subplots(figsize=(15.5, 9.0))
+    # Set up figures and axes - dynamically adjust width based on node count to prevent table column overlap
+    num_nodes = len(actual_nodes)
+    fig_width = max(15.5, num_nodes * 0.6)
+    fig, ax = plt.subplots(figsize=(fig_width, 9.0))
     # Leave 38% height at the bottom for the data table
-    plt.subplots_adjust(top=0.91, bottom=0.38, left=0.08, right=0.96)
+    # Dynamically scale left/right margins to keep absolute header spacing constant
+    left_margin = 1.25 / fig_width
+    right_margin = 1.0 - (0.6 / fig_width)
+    plt.subplots_adjust(top=0.91, bottom=0.38, left=left_margin, right=right_margin)
     
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
@@ -560,7 +586,9 @@ def generate_graphs(run_folder):
     
     # Style the table
     table.auto_set_font_size(False)
-    table.set_fontsize(8.5)
+    # Calculate a readable font size that scales down slightly with column count to prevent overlap
+    font_size = max(6.0, min(8.5, 120.0 / (num_nodes + 5)))
+    table.set_fontsize(font_size)
     
     # Customize cell colors
     for (row, col), cell in table.get_celld().items():
