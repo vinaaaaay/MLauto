@@ -3,8 +3,11 @@ Single build agent compiling the Semantic Agent StateGraph with inline nodes.
 """
 
 import os
+import json
+import uuid
 import asyncio
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -13,17 +16,23 @@ from langgraph.graph import StateGraph, START, END
 
 from .utils import SemanticAgentState, TutorialInfo, _LLMCallLogger, VectorStoreMCPClient
 from .prompts import _QUERY_GENERATOR_PROMPT, _RERANKER_PROMPT
+from .common_local import MetricsContext, node_metrics, SessionMetricsCallback
 
 logger = logging.getLogger(__name__)
 
+metric_logger = logging.getLogger("agent_metrics")
+ctx = MetricsContext(agent_id="semantic_agent")
 
-def build_semantic_agent_graph():
+
+def build_semantic_agent_graph(ctx=None, metric_logger=None):
     """
     Build and compile the Semantic Agent LangGraph.
     
     Contains all graph nodes inline to encapsulate execution scope,
     matching the single build agent design pattern.
     """
+    active_ctx = ctx or globals().get("ctx")
+    active_logger = metric_logger or globals().get("metric_logger")
     
     def _init_llm(llm_config: dict) -> ChatOpenAI:
         """Helper to initialize ChatOpenAI directly from config."""
@@ -63,6 +72,7 @@ def build_semantic_agent_graph():
             openai_api_base=api_base,
         )
 
+    @node_metrics(active_ctx, active_logger, "generate_query")
     def generate_query(state: SemanticAgentState) -> dict:
         """LLM node to generate a search query from the agent state."""
         logger.info("─── [Semantic Agent] generate_query ───")
@@ -95,8 +105,12 @@ def build_semantic_agent_graph():
             selected_tool=selected_tool,
         )
 
+        invoke_config = {}
+        if active_ctx and active_logger:
+            invoke_config = {"callbacks": [SessionMetricsCallback(ctx=active_ctx, metric_logger=active_logger)]}
+
         try:
-            response = llm.invoke(prompt)
+            response = llm.invoke(prompt, config=invoke_config if invoke_config else None)
             search_query = response.content.strip().strip("\"'")
         except Exception as e:
             logger.error(f"LLM query generation failed: {e}")
@@ -115,6 +129,7 @@ def build_semantic_agent_graph():
         logger.info(f"Generated search query: '{search_query}'")
         return {"search_query": search_query}
 
+    @node_metrics(active_ctx, active_logger, "retrieve_tutorials")
     async def retrieve_tutorials(state: SemanticAgentState) -> dict:
         """MCP client node — calls the standalone Vector Store MCP server using the client wrapper."""
         logger.info("─── [Semantic Agent] retrieve_tutorials ───")
@@ -133,6 +148,12 @@ def build_semantic_agent_graph():
         # Initialize the MCP client wrapper rather than raw connection inside the node
         client = VectorStoreMCPClient(server_url)
 
+        import time
+        import uuid
+        t0 = time.time()
+        status = "success"
+        error_msg = None
+
         try:
             raw_tutorials = await client.retrieve_tutorials(
                 query=query,
@@ -142,7 +163,31 @@ def build_semantic_agent_graph():
             )
         except Exception as e:
             logger.error(f"Vector Store MCP retrieval call failed: {e}")
+            status = "error"
+            error_msg = str(e)
             raw_tutorials = []
+
+        latency_ms = (time.time() - t0) * 1000
+
+        if active_logger and active_ctx:
+            tool_input = f"query: {query}, tool_name: {tool_name}, top_k: {top_k}, condensed: {condensed}"
+            log_data = {
+                "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d__%H-%M-%S.%f"),
+                "event_type": "tool_call",
+                **active_ctx.snapshot(),
+                "run_id": str(uuid.uuid4()),
+                "parent_run_id": active_ctx.span_id.get(),
+                "node_name": "retrieve_tutorials",
+                "tool_name": "retrieve_tutorials",
+                "tool_input": tool_input,
+                "latency_ms": round(latency_ms, 2),
+                "status": status,
+            }
+            if status == "success":
+                log_data["tool_output"] = str(raw_tutorials)
+            else:
+                log_data["error"] = error_msg
+            active_logger.info(json.dumps(log_data))
 
         # Deserialize to TutorialInfo named tuples
         tutorials = []
@@ -161,6 +206,7 @@ def build_semantic_agent_graph():
         logger.info(f"Retrieved {len(tutorials)} tutorial candidates from MCP server")
         return {"tutorial_retrieval": tutorials}
 
+    @node_metrics(active_ctx, active_logger, "rerank_tutorials")
     def rerank_tutorials(state: SemanticAgentState) -> dict:
         """Reranks the retrieved tutorials locally using LLM-based selection."""
         logger.info("─── [Semantic Agent] rerank_tutorials (running local/in-process reranker) ───")
@@ -206,7 +252,7 @@ def build_semantic_agent_graph():
             llm_config = config.get("llm", {}).copy()
             llm = _init_llm(llm_config)
             
-            call_logger = _LLMCallLogger(output_folder)
+            call_logger = _LLMCallLogger(output_folder, ctx=active_ctx, metric_logger=active_logger)
             response = call_logger.call(llm, prompt, node_name="semantic_agent/rerank_tutorials")
 
             # Parse response

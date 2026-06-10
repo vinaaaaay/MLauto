@@ -4,6 +4,8 @@ import json
 import logging
 import time
 import sys
+import uuid
+import psutil
 from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
@@ -26,10 +28,22 @@ from semantic_agent import build_semantic_agent_graph
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("semantic_agent.server")
 
+# Metrics logging setup
+from semantic_agent.common_local import MetricsContext, emit_event, SessionMetricsCallback
+
+metric_logger = logging.getLogger("agent_metrics")
+metric_logger.setLevel(logging.INFO)
+if not metric_logger.handlers:
+    _handler = logging.StreamHandler(sys.stdout)
+    _handler.setFormatter(logging.Formatter('%(message)s'))
+    metric_logger.addHandler(_handler)
+
+from semantic_agent.agent import ctx
+
 app = FastAPI(title="Semantic Agent")
 
 # Compile graph once as a module-level singleton
-_graph = build_semantic_agent_graph()
+_graph = build_semantic_agent_graph(ctx=ctx, metric_logger=metric_logger)
 logger.info("Semantic Agent LangGraph pipeline compiled successfully.")
 
 @app.post("/invoke")
@@ -45,6 +59,15 @@ async def invoke(request: Request):
         all_error_analyses = data.get("all_error_analyses", [])
         run_id = data.get("run_id")
         
+        if run_id:
+            runs_dir = os.environ.get("RUNS_DIR", "/runs")
+            log_path = os.path.join(runs_dir, run_id, "semantic_metrics.jsonl")
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            metric_logger.handlers = [h for h in metric_logger.handlers if not isinstance(h, logging.FileHandler)]
+            _fh = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+            _fh.setFormatter(logging.Formatter('%(message)s'))
+            metric_logger.addHandler(_fh)
+
         extra_fields = {}
         for k, v in data.items():
             if k not in ["task_description", "current_tool", "all_error_analyses", "skill", "run_id"]:
@@ -85,7 +108,42 @@ async def invoke(request: Request):
             **extra_fields
         }
 
-        result = await _graph.ainvoke(initial_state)
+        process = psutil.Process()
+        initial_mem = process.memory_info().rss
+        t0 = time.time()
+        
+        tracing_payload = {
+            "session_id": "unknown",
+            "context_id": run_id or uuid.uuid4().hex,
+        }
+        if "tracing" in data:
+            tracing_payload["tracing"] = data["tracing"]
+        elif "context_id" in data:
+            tracing_payload["context_id"] = data["context_id"]
+        if "session_id" in data:
+            tracing_payload["session_id"] = data["session_id"]
+            
+        ctx.init_from_payload(tracing_payload)
+        
+        langgraph_config = {
+            "callbacks": [SessionMetricsCallback(ctx=ctx, metric_logger=metric_logger)]
+        }
+
+        result = await _graph.ainvoke(initial_state, config=langgraph_config)
+        
+        elapsed = time.time() - t0
+        peak_mem = max(initial_mem, process.memory_info().rss)
+
+        emit_event(metric_logger, {
+            **ctx.snapshot(),
+            "event_type": "psutil_metrics_graph",
+            "graph_name": "semantic_agent",
+            "graph_e2e_s": round(elapsed, 4),
+            "peak_RAM_GB": round(peak_mem / (1024**3), 4),
+            "step_count": 3,
+            "iteration_count": 0,
+        })
+
         tutorial_prompt = result.get("tutorial_prompt", "")
         return JSONResponse({"tutorial_prompt": tutorial_prompt})
     except Exception as e:

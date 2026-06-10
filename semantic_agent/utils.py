@@ -56,10 +56,12 @@ class SemanticAgentState(TypedDict):
 class _LLMCallLogger:
     """Logs every LLM call (prompt + response) to structured JSONL."""
 
-    def __init__(self, output_dir: str):
+    def __init__(self, output_dir: str, ctx=None, metric_logger: Optional[logging.Logger] = None):
         self.output_dir = output_dir
         self.jsonl_path = os.path.join(output_dir, "llm_calls.jsonl")
         self.call_count = 0
+        self.ctx = ctx
+        self.metric_logger = metric_logger
 
     def call(self, llm, prompt: str, node_name: str = "unknown") -> str:
         self.call_count += 1
@@ -68,7 +70,13 @@ class _LLMCallLogger:
         logger.info(f"[Call #{call_id}] {node_name} — sending prompt ({len(prompt)} chars)")
 
         start = time.time()
-        response = llm.invoke(prompt)
+        
+        invoke_config = {}
+        if self.ctx and self.metric_logger:
+            from .common_local import SessionMetricsCallback
+            invoke_config = {"callbacks": [SessionMetricsCallback(ctx=self.ctx, metric_logger=self.metric_logger)]}
+
+        response = llm.invoke(prompt, config=invoke_config if invoke_config else None)
         elapsed = time.time() - start
         content = response.content
 

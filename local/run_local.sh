@@ -60,7 +60,7 @@ echo "===================================================="
 echo "3. Starting benchmark run on tabular dataset..."
 echo "===================================================="
 cd ..
-python local/run_benchmark.py --datasets the-icml-2013-whale-challenge-right-whale-redux --config-file local/config.json --max-iterations 40 --user-prompt "$USER_PROMPT"
+python local/run_benchmark.py --datasets tabular-playground-series-may-2022 --config-file local/config.json --max-iterations 40 --user-prompt "$USER_PROMPT"
 
 echo ""
 echo "===================================================="
